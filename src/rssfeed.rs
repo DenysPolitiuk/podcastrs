@@ -28,10 +28,7 @@ impl RssFeed {
         Ok(())
     }
 
-    pub fn save_item<W: Write>(
-        item: &Item,
-        writer: &mut BufWriter<W>,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn save_item<W: Write>(item: &Item, writer: &mut W) -> Result<(), Box<dyn Error>> {
         let enclosure = match item.enclosure() {
             None => Err("unable to get enclosure for the item")?,
             Some(v) => v,
