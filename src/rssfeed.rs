@@ -72,8 +72,8 @@ mod tests {
 
         println!("total number of items is {}", feed.get_items().len());
 
-        assert_eq!(feed.get_items().len(), 100);
-        assert_eq!(valid_items, 100);
+        assert_ne!(feed.get_items().len(), 0);
+        assert_eq!(valid_items, feed.get_items().len());
     }
 
     #[test]
