@@ -1,9 +1,10 @@
+use md5;
 use reqwest;
 use rss::{Channel, Item};
 
 use std::error::Error;
 use std::fs::File;
-use std::io::{BufReader, BufWriter, Write};
+use std::io::{BufReader, BufWriter, Read, Write};
 
 pub struct RssFeed {
     channel: Channel,
@@ -12,14 +13,25 @@ pub struct RssFeed {
 }
 
 impl RssFeed {
-    pub fn new_from_file(file_name: &str) -> Result<RssFeed, Box<dyn Error>> {
+    pub fn new_from_file(file_name: &str) -> Result<RssFeed, Box<Error + Send + Sync>> {
         let file = File::open(file_name)?;
-        let channel = Channel::read_from(BufReader::new(file))?;
+        let buf_reader = BufReader::new(&file);
+        let channel = Channel::read_from(buf_reader)?;
+
+        let file = File::open(file_name)?;
+        let mut buf_reader = BufReader::new(&file);
+        let mut buffer = vec![];
+        buf_reader.read_to_end(&mut buffer)?;
+        let hash = md5::compute(buffer);
 
         Ok(RssFeed {
             channel,
-            hash: String::new(),
+            hash: format!("{:x}", hash),
         })
+    }
+
+    pub fn get_hash(&self) -> &str {
+        self.hash.as_str()
     }
 
     pub fn get_items(&self) -> &[Item] {
@@ -50,8 +62,25 @@ impl RssFeed {
 mod tests {
     use super::*;
 
+    static TEST_FEED: &str = "tests/sedaily.rss";
+    static TEST_FEED_HASH: &str = "04dd6b58dccc7944162a934948df3da3";
+
     fn test_feed() -> RssFeed {
-        RssFeed::new_from_file("sedaily.rss").unwrap()
+        match RssFeed::new_from_file(TEST_FEED) {
+            Ok(v) => v,
+            Err(e) => {
+                println!("{}", e);
+                panic!(e)
+            }
+        }
+    }
+
+    #[test]
+    fn create_feed_has_hash() {
+        let feed = test_feed();
+
+        assert_ne!(feed.hash, String::new());
+        assert_eq!(feed.hash.as_str(), TEST_FEED_HASH);
     }
 
     #[test]
@@ -61,19 +90,16 @@ mod tests {
         let items = feed.get_items();
         let mut valid_items = 0;
         for item in items {
-            let title = match item.title() {
+            let _ = match item.title() {
                 None => continue,
                 Some(v) => v,
             };
-            let enclosure = match item.enclosure() {
+            let _ = match item.enclosure() {
                 None => continue,
                 Some(v) => v,
             };
             valid_items += 1;
-            println!("{} @ {}", title, enclosure.url());
         }
-
-        println!("total number of items is {}", feed.get_items().len());
 
         assert_ne!(feed.get_items().len(), 0);
         assert_eq!(valid_items, feed.get_items().len());
