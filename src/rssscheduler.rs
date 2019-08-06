@@ -27,6 +27,10 @@ impl RssScheduler {
             }
         }
     }
+
+    pub fn get_source_feed(&self, url: &str) -> Option<&SourceFeed> {
+        self.source_feeds.get(url)
+    }
 }
 
 #[cfg(test)]
@@ -47,7 +51,20 @@ mod tests {
 
     #[test]
     fn get_source_feeds() {
-        panic!("unimplemented");
+        const SOURCE1: &str = "test1";
+        const SOURCE2: &str = "test2";
+        const SOURCE3: &str = "test3";
+        const INVALID_SOURCE: &str = "invalid";
+
+        let mut scheduler = RssScheduler::new();
+        scheduler.add_source_feed(SOURCE1);
+        scheduler.add_source_feed(SOURCE2);
+        scheduler.add_source_feed(SOURCE3);
+
+        assert_eq!(scheduler.get_source_feed(SOURCE1).unwrap().url, SOURCE1);
+        assert_eq!(scheduler.get_source_feed(SOURCE2).unwrap().url, SOURCE2);
+        assert_eq!(scheduler.get_source_feed(SOURCE3).unwrap().url, SOURCE3);
+        assert!(scheduler.get_source_feed(INVALID_SOURCE).is_none());
     }
 
     #[test]
