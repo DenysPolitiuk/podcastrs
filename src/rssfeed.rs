@@ -7,6 +7,8 @@ use std::io::{BufReader, BufWriter, Write};
 
 pub struct RssFeed {
     channel: Channel,
+    // TODO: better datatype ?
+    hash: String,
 }
 
 impl RssFeed {
@@ -14,13 +16,17 @@ impl RssFeed {
         let file = File::open(file_name)?;
         let channel = Channel::read_from(BufReader::new(file))?;
 
-        Ok(RssFeed { channel })
+        Ok(RssFeed {
+            channel,
+            hash: String::new(),
+        })
     }
 
     pub fn get_items(&self) -> &[Item] {
         self.channel.items()
     }
 
+    // TODO: change name to save_item_to_file
     pub fn save_to_file(item: &Item, file_name: &str) -> Result<(), Box<dyn Error>> {
         let file = File::create(file_name)?;
 
@@ -79,6 +85,7 @@ mod tests {
         let items = feed.get_items();
         let item = &items[0];
 
+        // TODO: instead of using item.title() should use temp file from `tempdir` crate
         RssFeed::save_to_file(&item, item.title().or(Some("test.mp3")).unwrap()).unwrap();
     }
 }
