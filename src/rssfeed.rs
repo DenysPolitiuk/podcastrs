@@ -7,13 +7,17 @@ use std::fs::File;
 use std::io::{BufReader, BufWriter, Read, Write};
 
 pub struct RssFeed {
+    source_feed_url: String,
     channel: Channel,
     // TODO: better datatype ?
     hash: String,
 }
 
 impl RssFeed {
-    pub fn new_from_file(file_name: &str) -> Result<RssFeed, Box<Error + Send + Sync>> {
+    pub fn new_from_file(
+        source_url: &str,
+        file_name: &str,
+    ) -> Result<RssFeed, Box<dyn Error + Send + Sync>> {
         let file = File::open(file_name)?;
         let buf_reader = BufReader::new(&file);
         let channel = Channel::read_from(buf_reader)?;
@@ -25,6 +29,7 @@ impl RssFeed {
         let hash = md5::compute(buffer);
 
         Ok(RssFeed {
+            source_feed_url: source_url.to_string(),
             channel,
             hash: format!("{:x}", hash),
         })
@@ -64,9 +69,10 @@ mod tests {
 
     static TEST_FEED: &str = "tests/sedaily.rss";
     static TEST_FEED_HASH: &str = "04dd6b58dccc7944162a934948df3da3";
+    static TEST_SOURCE_FEED_URL: &str = "test";
 
     fn test_feed() -> RssFeed {
-        match RssFeed::new_from_file(TEST_FEED) {
+        match RssFeed::new_from_file(TEST_SOURCE_FEED_URL, TEST_FEED) {
             Ok(v) => v,
             Err(e) => {
                 println!("{}", e);
