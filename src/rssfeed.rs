@@ -35,6 +35,10 @@ impl RssFeed {
         })
     }
 
+    pub fn get_source_feed(&self) -> &String {
+        &self.source_feed_url
+    }
+
     pub fn get_hash(&self) -> &str {
         self.hash.as_str()
     }
