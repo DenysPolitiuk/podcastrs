@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 pub struct RssScheduler {
     source_feeds: HashMap<String, SourceFeed>,
-    rss_feeds: HashMap<String, Vec<RssFeed>>,
+    rss_feeds: HashMap<String, RssFeed>,
 }
 
 impl RssScheduler {
@@ -32,17 +32,27 @@ impl RssScheduler {
         self.source_feeds.get(url)
     }
 
-    pub fn add_new_feed(&mut self, new_feed: RssFeed) {
+    pub fn add_new_feed(&mut self, new_feed: RssFeed) -> bool {
         let source_url = new_feed.get_source_feed();
         match self.rss_feeds.entry(source_url.clone()) {
             Entry::Occupied(mut v) => {
-                let feeds = v.get_mut();
-                feeds.push(new_feed);
+                let old_feed = v.get();
+                if old_feed.get_hash() != new_feed.get_hash() {
+                    v.insert(new_feed);
+                    true
+                } else {
+                    false
+                }
             }
             Entry::Vacant(v) => {
-                v.insert(vec![new_feed]);
+                v.insert(new_feed);
+                true
             }
-        };
+        }
+    }
+
+    pub fn get_feed(&self, source_url: &str) -> Option<&RssFeed> {
+        self.rss_feeds.get(source_url)
     }
 }
 
@@ -72,13 +82,9 @@ mod tests {
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
         let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
-        let feed3 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
-        let feed4 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
 
         scheduler.add_new_feed(feed1);
         scheduler.add_new_feed(feed2);
-        scheduler.add_new_feed(feed3);
-        scheduler.add_new_feed(feed4);
 
         scheduler
     }
@@ -110,22 +116,60 @@ mod tests {
         let scheduler = set_up_scheduler_with_feeds();
 
         assert_eq!(scheduler.rss_feeds.len(), 2);
-        assert_eq!(scheduler.rss_feeds.get(SOURCE1).unwrap().len(), 2);
-        assert_eq!(scheduler.rss_feeds.get(SOURCE2).unwrap().len(), 2);
     }
 
     #[test]
     fn get_new_feed_from_feed_source() {
-        panic!("unimplemented");
-    }
+        let scheduler = set_up_scheduler_with_feeds();
 
-    #[test]
-    fn check_feed_need_update() {
-        panic!("unimplemented");
+        let feed1 = scheduler.get_feed(SOURCE1).unwrap();
+        let feed2 = scheduler.get_feed(SOURCE2).unwrap();
+        let feed3 = scheduler.get_feed(INVALID_SOURCE);
+
+        assert_eq!(
+            feed1.get_hash(),
+            RssFeed::new_from_file(SOURCE1, FEED1_FILE)
+                .unwrap()
+                .get_hash()
+        );
+        assert_eq!(
+            feed2.get_hash(),
+            RssFeed::new_from_file(SOURCE2, FEED2_FILE)
+                .unwrap()
+                .get_hash()
+        );
+        assert!(feed3.is_none());
     }
 
     #[test]
     fn update_feed() {
-        panic!("unimplemented");
+        let mut scheduler = set_up_scheduler_with_feeds();
+
+        let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
+        let feed1_hash = feed1.get_hash().to_string();
+        let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
+        let feed2_hash = feed2.get_hash().to_string();
+        let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
+        let feed3_hash = feed3.get_hash().to_string();
+        let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
+        let feed4_hash = feed4.get_hash().to_string();
+
+        assert_eq!(scheduler.get_feed(SOURCE1).unwrap().get_hash(), feed1_hash);
+        assert!(!scheduler.add_new_feed(feed1));
+        assert_eq!(scheduler.get_feed(SOURCE1).unwrap().get_hash(), feed1_hash);
+
+        assert_eq!(scheduler.get_feed(SOURCE2).unwrap().get_hash(), feed2_hash);
+        assert!(!scheduler.add_new_feed(feed2));
+        assert_eq!(scheduler.get_feed(SOURCE2).unwrap().get_hash(), feed2_hash);
+
+        assert_ne!(scheduler.get_feed(SOURCE1).unwrap().get_hash(), feed3_hash);
+        assert!(scheduler.add_new_feed(feed3));
+        assert_ne!(scheduler.get_feed(SOURCE1).unwrap().get_hash(), feed1_hash);
+        assert_eq!(scheduler.get_feed(SOURCE1).unwrap().get_hash(), feed3_hash);
+
+        assert_ne!(scheduler.get_feed(SOURCE2).unwrap().get_hash(), feed4_hash);
+        assert!(scheduler.add_new_feed(feed4));
+        assert_ne!(scheduler.get_feed(SOURCE2).unwrap().get_hash(), feed2_hash);
+        assert_eq!(scheduler.get_feed(SOURCE2).unwrap().get_hash(), feed4_hash);
     }
 }
