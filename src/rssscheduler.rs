@@ -83,6 +83,21 @@ impl RssScheduler {
             }
         }
     }
+
+    // TODO: add better return with found errors
+    pub fn load_new_feeds_from_source(&mut self) {
+        let mut feeds_to_add = vec![];
+        for source_feed in self.source_feeds.values() {
+            let feed = RssFeed::new_from_url(source_feed.url.as_str());
+            if let Ok(feed) = feed {
+                feeds_to_add.push(feed);
+            }
+        }
+
+        for feed in feeds_to_add {
+            self.add_new_feed(feed);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -96,6 +111,8 @@ mod tests {
 
     const FEED1_FILE: &str = "tests/sedaily.rss";
     const FEED2_FILE: &str = "tests/hn.rss";
+
+    const REAL_FEED_URL: &str = "https://softwareengineeringdaily.com/category/podcast/feed";
 
     struct RssSchedulerStorageTest {
         source_feeds: HashMap<String, SourceFeed>,
@@ -396,5 +413,31 @@ mod tests {
             feed4_hash
         );
         assert!(storage.rss_feeds.get(SOURCE3).is_none());
+    }
+
+    #[test]
+    #[ignore]
+    fn load_new_feeds_from_url() {
+        let mut scheduler = RssScheduler::new();
+        scheduler.add_source_feed(REAL_FEED_URL);
+
+        assert!(scheduler.rss_feeds.get(REAL_FEED_URL).is_none());
+
+        scheduler.load_new_feeds_from_source();
+
+        assert!(scheduler.rss_feeds.get(REAL_FEED_URL).is_some());
+        assert_eq!(
+            scheduler
+                .rss_feeds
+                .get(REAL_FEED_URL)
+                .unwrap()
+                .get_source_feed(),
+            REAL_FEED_URL
+        );
+    }
+
+    #[test]
+    fn find_new_items_from_new_feeds() {
+        panic!("unimplemented");
     }
 }
