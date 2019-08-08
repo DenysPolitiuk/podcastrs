@@ -61,8 +61,10 @@ impl RssFeed {
         self.channel.items()
     }
 
-    // TODO: change name to save_item_to_file
-    pub fn save_to_file(item: &Item, file_name: &str) -> Result<(), Box<dyn Error>> {
+    pub fn save_item_to_file<P: AsRef<Path>>(
+        item: &Item,
+        file_name: P,
+    ) -> Result<(), Box<dyn Error>> {
         let file = File::create(file_name)?;
 
         RssFeed::save_item(&item, &mut BufWriter::new(file))?;
@@ -145,8 +147,8 @@ mod tests {
         let feed = test_feed();
         let items = feed.get_items();
         let item = &items[0];
+        let temp_file = NamedTempFile::new().unwrap();
 
-        // TODO: instead of using item.title() should use temp file from `tempdir` crate
-        RssFeed::save_to_file(&item, item.title().or(Some("test.mp3")).unwrap()).unwrap();
+        RssFeed::save_item_to_file(&item, temp_file.path()).unwrap();
     }
 }
