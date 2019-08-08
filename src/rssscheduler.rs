@@ -4,6 +4,13 @@ use crate::SourceFeed;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
+pub trait RssSchedulerStorage {
+    fn get_source_feeds(&self) -> HashMap<String, SourceFeed>;
+    fn get_last_rss_feed(&self, url: &str) -> Option<RssFeed>;
+    fn add_new_rss_feed(&mut self, feed: RssFeed);
+    fn add_source_feed(&mut self, source_feed: SourceFeed);
+}
+
 pub struct RssScheduler {
     source_feeds: HashMap<String, SourceFeed>,
     rss_feeds: HashMap<String, RssFeed>,
