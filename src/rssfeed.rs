@@ -1,10 +1,12 @@
 use reqwest;
 use rss::{Channel, Item};
 use sha2::{Digest, Sha512};
+use tempfile::NamedTempFile;
 
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Read, Write};
+use std::path::Path;
 
 #[derive(Clone)]
 pub struct RssFeed {
@@ -12,29 +14,38 @@ pub struct RssFeed {
     channel: Channel,
     // TODO: better datatype ?
     hash: String,
+    raw_data: Vec<u8>,
 }
 
 impl RssFeed {
-    pub fn new_from_file(
+    pub fn new_from_url(source_url: &str) -> Result<RssFeed, Box<dyn Error + Send + Sync>> {
+        let mut temp_file = NamedTempFile::new()?;
+        let _ = reqwest::get(source_url)?.copy_to(&mut temp_file);
+
+        RssFeed::new_from_file(source_url, temp_file.path())
+    }
+
+    pub fn new_from_file<P: AsRef<Path>>(
         source_url: &str,
-        file_name: &str,
+        file_name: P,
     ) -> Result<RssFeed, Box<dyn Error + Send + Sync>> {
-        let file = File::open(file_name)?;
+        let file = File::open(&file_name)?;
         let buf_reader = BufReader::new(&file);
         let channel = Channel::read_from(buf_reader)?;
 
-        let file = File::open(file_name)?;
+        let file = File::open(&file_name)?;
         let mut buf_reader = BufReader::new(&file);
         let mut buffer = vec![];
         buf_reader.read_to_end(&mut buffer)?;
         let mut hasher = Sha512::new();
-        hasher.input(buffer);
+        hasher.input(&buffer);
         let hash = hasher.result();
 
         Ok(RssFeed {
             source_feed_url: source_url.to_string(),
             channel,
             hash: format!("{:x}", hash),
+            raw_data: buffer,
         })
     }
 
@@ -77,6 +88,7 @@ mod tests {
     static TEST_FEED: &str = "tests/sedaily.rss";
     static TEST_FEED_HASH: &str = "bbebeae954a00d0426239111a5d632b366073736abaa04e080c49b280b7622c23c0e2485e4701acf77b5b541f14a34421dfb1c905e3191b15837d056950a8d8f";
     static TEST_SOURCE_FEED_URL: &str = "test";
+    static REAL_FEED_URL: &str = "https://softwareengineeringdaily.com/category/podcast/feed";
 
     fn test_feed() -> RssFeed {
         match RssFeed::new_from_file(TEST_SOURCE_FEED_URL, TEST_FEED) {
@@ -118,7 +130,17 @@ mod tests {
         assert_eq!(valid_items, feed.get_items().len());
     }
 
-    // #[test]
+    #[test]
+    #[ignore]
+    fn create_feed_from_url() {
+        let feed = RssFeed::new_from_url(REAL_FEED_URL).unwrap();
+
+        assert!(!feed.raw_data.is_empty());
+        assert!(!feed.get_items().is_empty());
+    }
+
+    #[test]
+    #[ignore]
     fn save_item() {
         let feed = test_feed();
         let items = feed.get_items();
