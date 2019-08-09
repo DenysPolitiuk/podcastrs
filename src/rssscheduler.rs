@@ -1,8 +1,11 @@
 use crate::RssFeed;
 use crate::SourceFeed;
 
+use rss::Item;
+
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 pub trait RssSchedulerStorage {
     fn get_source_feeds(&self) -> HashMap<String, SourceFeed>;
@@ -98,6 +101,38 @@ impl RssScheduler {
             self.add_new_feed(feed);
         }
     }
+
+    fn find_new_items<'a>(old_feed: &RssFeed, new_feed: &'a RssFeed) -> Vec<&'a Item> {
+        let mut difference = vec![];
+        let mut existing_guids = HashSet::with_capacity(old_feed.get_items().len());
+
+        for item in old_feed.get_items() {
+            let guid = match item.guid() {
+                // using guids to compare items in the feed so if it doesn't exist panic
+                // in future might have to create a different way to compare items if
+                // guid is not present
+                None => panic!("Item has to have a guid to allow for comparison"),
+                Some(v) => v.value(),
+            };
+            existing_guids.insert(guid);
+        }
+
+        for item in new_feed.get_items() {
+            let guid = match item.guid() {
+                // using guids to compare items in the feed so if it doesn't exist panic
+                // in future might have to create a different way to compare items if
+                // guid is not present
+                None => panic!("Item has to have a guid to allow for comparison"),
+                Some(v) => v.value(),
+            };
+
+            if !existing_guids.contains(guid) {
+                difference.push(item);
+            }
+        }
+
+        difference
+    }
 }
 
 #[cfg(test)]
@@ -110,6 +145,7 @@ mod tests {
     const INVALID_SOURCE: &str = "invalid";
 
     const FEED1_FILE: &str = "tests/sedaily.rss";
+    const FEED1_FILE2: &str = "tests/sedaily2.rss";
     const FEED2_FILE: &str = "tests/hn.rss";
 
     const REAL_FEED_URL: &str = "https://softwareengineeringdaily.com/category/podcast/feed";
@@ -438,6 +474,29 @@ mod tests {
 
     #[test]
     fn find_new_items_from_new_feeds() {
-        panic!("unimplemented");
+        let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
+        let feed2 = RssFeed::new_from_file(SOURCE1, FEED1_FILE2).unwrap();
+
+        assert_ne!(feed1.get_hash(), feed2.get_hash());
+
+        let difference = RssScheduler::find_new_items(&feed1, &feed2);
+        let expected_difference = vec![
+            "http://softwareengineeringdaily.com/?p=7815",
+            "http://softwareengineeringdaily.com/?p=7814",
+            "http://softwareengineeringdaily.com/?p=7813",
+            "http://softwareengineeringdaily.com/?p=7781",
+        ];
+        let difference_guids: Vec<_> = difference
+            .iter()
+            .map(|i| i.guid().unwrap().value())
+            .collect();
+
+        for item in &difference {
+            println!("{}", item.guid().unwrap().value());
+        }
+
+        assert!(!difference.is_empty());
+        assert_eq!(difference.len(), 4);
+        assert_eq!(difference_guids, expected_difference);
     }
 }
