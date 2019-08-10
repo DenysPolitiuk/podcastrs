@@ -6,12 +6,13 @@ use rss::Item;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::error::Error;
 
 pub trait RssSchedulerStorage {
-    fn get_source_feeds(&self) -> HashMap<String, SourceFeed>;
-    fn get_last_rss_feed(&self, url: &str) -> Option<RssFeed>;
-    fn add_new_rss_feed(&mut self, feed: RssFeed);
-    fn add_source_feed(&mut self, source_feed: SourceFeed);
+    fn get_source_feeds(&self) -> Result<HashMap<String, SourceFeed>, Box<dyn Error>>;
+    fn get_last_rss_feed(&self, url: &str) -> Result<Option<RssFeed>, Box<dyn Error>>;
+    fn add_new_rss_feed(&self, feed: RssFeed) -> Result<(), Box<dyn Error>>;
+    fn add_source_feed(&self, source_feed: SourceFeed) -> Result<(), Box<dyn Error>>;
 }
 
 pub struct RssScheduler {
@@ -65,26 +66,40 @@ impl RssScheduler {
         self.rss_feeds.get(source_url)
     }
 
-    pub fn load_source_feeds_from_storage(&mut self, storage: &RssSchedulerStorage) {
-        self.source_feeds = storage.get_source_feeds();
+    pub fn load_source_feeds_from_storage(
+        &mut self,
+        storage: &dyn RssSchedulerStorage,
+    ) -> Result<(), Box<dyn Error>> {
+        self.source_feeds = storage.get_source_feeds()?;
+        Ok(())
     }
 
-    pub fn load_feed_from_storage(&mut self, storage: &RssSchedulerStorage) {
+    pub fn load_feed_from_storage(
+        &mut self,
+        storage: &dyn RssSchedulerStorage,
+    ) -> Result<(), Box<dyn Error>> {
         for source_feed in self.source_feeds.values() {
-            let feed = storage.get_last_rss_feed(&source_feed.url);
+            let feed = storage.get_last_rss_feed(&source_feed.url)?;
             if let Some(feed) = feed {
                 self.rss_feeds.insert(source_feed.url.clone(), feed);
             }
         }
+
+        Ok(())
     }
 
-    pub fn store_feeds_to_database(&self, storage: &mut RssSchedulerStorage) {
+    pub fn store_feeds_to_database(
+        &self,
+        storage: &dyn RssSchedulerStorage,
+    ) -> Result<(), Box<dyn Error>> {
         for source_feed in self.source_feeds.values() {
             let feed = self.rss_feeds.get(&source_feed.url);
             if let Some(feed) = feed {
-                storage.add_new_rss_feed(feed.clone());
+                storage.add_new_rss_feed(feed.clone())?;
             }
         }
+
+        Ok(())
     }
 
     // TODO: add better return with found errors
@@ -138,6 +153,7 @@ impl RssScheduler {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::RefCell;
 
     const SOURCE1: &str = "test1";
     const SOURCE2: &str = "test2";
@@ -151,40 +167,45 @@ mod tests {
     const REAL_FEED_URL: &str = "https://softwareengineeringdaily.com/category/podcast/feed";
 
     struct RssSchedulerStorageTest {
-        source_feeds: HashMap<String, SourceFeed>,
-        rss_feeds: HashMap<String, Vec<RssFeed>>,
+        source_feeds: RefCell<HashMap<String, SourceFeed>>,
+        rss_feeds: RefCell<HashMap<String, Vec<RssFeed>>>,
     }
 
     impl RssSchedulerStorageTest {
         pub fn new() -> RssSchedulerStorageTest {
             RssSchedulerStorageTest {
-                source_feeds: HashMap::new(),
-                rss_feeds: HashMap::new(),
+                source_feeds: RefCell::new(HashMap::new()),
+                rss_feeds: RefCell::new(HashMap::new()),
             }
         }
     }
 
     impl RssSchedulerStorage for RssSchedulerStorageTest {
-        fn get_source_feeds(&self) -> HashMap<String, SourceFeed> {
-            self.source_feeds.clone()
+        fn get_source_feeds(&self) -> Result<HashMap<String, SourceFeed>, Box<dyn Error>> {
+            Ok(self.source_feeds.borrow().clone())
         }
-        fn get_last_rss_feed(&self, url: &str) -> Option<RssFeed> {
-            let feeds = match self.rss_feeds.get(url) {
-                None => return None,
-                Some(v) => v,
+        fn get_last_rss_feed(&self, url: &str) -> Result<Option<RssFeed>, Box<dyn Error>> {
+            let last_feed = match self.rss_feeds.borrow().get(url) {
+                None => return Ok(None),
+                Some(v) => v.last().cloned(),
             };
-            feeds.last().cloned()
+            Ok(last_feed)
         }
-        fn add_new_rss_feed(&mut self, feed: RssFeed) {
-            let feeds = self
-                .rss_feeds
+        fn add_new_rss_feed(&self, feed: RssFeed) -> Result<(), Box<dyn Error>> {
+            self.rss_feeds
+                .borrow_mut()
                 .entry(feed.get_source_feed().clone())
-                .or_insert(vec![]);
-            feeds.push(feed);
+                .or_insert(vec![])
+                .push(feed);
+
+            Ok(())
         }
-        fn add_source_feed(&mut self, source_feed: SourceFeed) {
+        fn add_source_feed(&self, source_feed: SourceFeed) -> Result<(), Box<dyn Error>> {
             self.source_feeds
+                .borrow_mut()
                 .insert(source_feed.url.clone(), source_feed);
+
+            Ok(())
         }
     }
 
@@ -295,7 +316,7 @@ mod tests {
 
     #[test]
     fn retrieve_source_feeds_from_database() {
-        let mut storage = RssSchedulerStorageTest::new();
+        let storage = RssSchedulerStorageTest::new();
         storage.add_source_feed(SourceFeed::new(SOURCE1));
         storage.add_source_feed(SourceFeed::new(SOURCE2));
         storage.add_source_feed(SourceFeed::new(SOURCE3));
@@ -314,7 +335,7 @@ mod tests {
 
     #[test]
     fn retrieve_last_rss_feed_from_database() {
-        let mut storage = RssSchedulerStorageTest::new();
+        let storage = RssSchedulerStorageTest::new();
         storage.add_source_feed(SourceFeed::new(SOURCE1));
         storage.add_source_feed(SourceFeed::new(SOURCE2));
         storage.add_source_feed(SourceFeed::new(SOURCE3));
@@ -350,7 +371,7 @@ mod tests {
 
     #[test]
     fn add_new_rss_feed_to_database() {
-        let mut storage = RssSchedulerStorageTest::new();
+        let storage = RssSchedulerStorageTest::new();
         storage.add_source_feed(SourceFeed::new(SOURCE1));
         storage.add_source_feed(SourceFeed::new(SOURCE2));
         storage.add_source_feed(SourceFeed::new(SOURCE3));
@@ -366,16 +387,17 @@ mod tests {
 
         let mut scheduler = set_up_scheduler_with_feeds();
 
-        assert!(storage.rss_feeds.get(SOURCE1).is_none());
-        assert!(storage.rss_feeds.get(SOURCE2).is_none());
-        assert!(storage.rss_feeds.get(SOURCE3).is_none());
+        assert!(storage.rss_feeds.borrow().get(SOURCE1).is_none());
+        assert!(storage.rss_feeds.borrow().get(SOURCE2).is_none());
+        assert!(storage.rss_feeds.borrow().get(SOURCE3).is_none());
 
-        scheduler.store_feeds_to_database(&mut storage);
+        scheduler.store_feeds_to_database(&storage);
 
-        assert_eq!(storage.rss_feeds.get(SOURCE1).unwrap().len(), 1);
+        assert_eq!(storage.rss_feeds.borrow().get(SOURCE1).unwrap().len(), 1);
         assert_eq!(
             storage
                 .rss_feeds
+                .borrow()
                 .get(SOURCE1)
                 .unwrap()
                 .last()
@@ -383,10 +405,11 @@ mod tests {
                 .get_hash(),
             feed1_hash
         );
-        assert_eq!(storage.rss_feeds.get(SOURCE2).unwrap().len(), 1);
+        assert_eq!(storage.rss_feeds.borrow().get(SOURCE2).unwrap().len(), 1);
         assert_eq!(
             storage
                 .rss_feeds
+                .borrow()
                 .get(SOURCE2)
                 .unwrap()
                 .last()
@@ -394,15 +417,16 @@ mod tests {
                 .get_hash(),
             feed2_hash
         );
-        assert!(storage.rss_feeds.get(SOURCE3).is_none());
+        assert!(storage.rss_feeds.borrow().get(SOURCE3).is_none());
 
         scheduler.add_new_feed(feed3);
-        scheduler.store_feeds_to_database(&mut storage);
+        scheduler.store_feeds_to_database(&storage);
 
-        assert_eq!(storage.rss_feeds.get(SOURCE1).unwrap().len(), 2);
+        assert_eq!(storage.rss_feeds.borrow().get(SOURCE1).unwrap().len(), 2);
         assert_eq!(
             storage
                 .rss_feeds
+                .borrow()
                 .get(SOURCE1)
                 .unwrap()
                 .last()
@@ -410,10 +434,11 @@ mod tests {
                 .get_hash(),
             feed3_hash
         );
-        assert_eq!(storage.rss_feeds.get(SOURCE2).unwrap().len(), 2);
+        assert_eq!(storage.rss_feeds.borrow().get(SOURCE2).unwrap().len(), 2);
         assert_eq!(
             storage
                 .rss_feeds
+                .borrow()
                 .get(SOURCE2)
                 .unwrap()
                 .last()
@@ -421,15 +446,16 @@ mod tests {
                 .get_hash(),
             feed2_hash
         );
-        assert!(storage.rss_feeds.get(SOURCE3).is_none());
+        assert!(storage.rss_feeds.borrow().get(SOURCE3).is_none());
 
         scheduler.add_new_feed(feed4);
-        scheduler.store_feeds_to_database(&mut storage);
+        scheduler.store_feeds_to_database(&storage);
 
-        assert_eq!(storage.rss_feeds.get(SOURCE1).unwrap().len(), 3);
+        assert_eq!(storage.rss_feeds.borrow().get(SOURCE1).unwrap().len(), 3);
         assert_eq!(
             storage
                 .rss_feeds
+                .borrow()
                 .get(SOURCE1)
                 .unwrap()
                 .last()
@@ -437,10 +463,11 @@ mod tests {
                 .get_hash(),
             feed3_hash
         );
-        assert_eq!(storage.rss_feeds.get(SOURCE2).unwrap().len(), 3);
+        assert_eq!(storage.rss_feeds.borrow().get(SOURCE2).unwrap().len(), 3);
         assert_eq!(
             storage
                 .rss_feeds
+                .borrow()
                 .get(SOURCE2)
                 .unwrap()
                 .last()
@@ -448,7 +475,7 @@ mod tests {
                 .get_hash(),
             feed4_hash
         );
-        assert!(storage.rss_feeds.get(SOURCE3).is_none());
+        assert!(storage.rss_feeds.borrow().get(SOURCE3).is_none());
     }
 
     #[test]
