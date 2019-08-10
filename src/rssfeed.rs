@@ -1,5 +1,6 @@
 use reqwest;
 use rss::{Channel, Item};
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use tempfile::NamedTempFile;
 
@@ -8,7 +9,7 @@ use std::fs::File;
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::Path;
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct RssFeed {
     source_feed_url: String,
     channel: Channel,
