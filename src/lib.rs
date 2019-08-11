@@ -1,10 +1,10 @@
 mod rssfeed;
-mod rssscheduler;
+pub mod rssscheduler;
 mod rssstorage;
 mod sourcefeed;
 
 use rssfeed::RssFeed;
+pub use rssscheduler::RssScheduler;
 use rssscheduler::RssSchedulerStorage;
-#[allow(unused_imports)]
-use rssstorage::RssStorage;
-use sourcefeed::SourceFeed;
+pub use rssstorage::RssStorage;
+pub use sourcefeed::SourceFeed;

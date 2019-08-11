@@ -20,6 +20,7 @@ pub struct RssFeed {
 
 impl RssFeed {
     pub fn new_from_url(source_url: &str) -> Result<RssFeed, Box<dyn Error + Send + Sync>> {
+        // TODO: look into from xml RSS generation to avoid using temp files
         let mut temp_file = NamedTempFile::new()?;
         let _ = reqwest::get(source_url)?.copy_to(&mut temp_file);
 

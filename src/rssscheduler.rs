@@ -7,6 +7,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::error::Error;
+use std::path::Path;
 
 pub trait RssSchedulerStorage {
     fn get_source_feeds(&self) -> Result<HashMap<String, SourceFeed>, Box<dyn Error>>;
@@ -96,6 +97,7 @@ impl RssScheduler {
         Ok(())
     }
 
+    // TODO: remove, use store_feed_to_database instead
     #[allow(dead_code)]
     pub fn store_feeds_to_database(
         &self,
@@ -111,9 +113,74 @@ impl RssScheduler {
         Ok(())
     }
 
+    #[allow(dead_code)]
+    pub fn store_feed_to_database(
+        feed: RssFeed,
+        storage: &dyn RssSchedulerStorage,
+    ) -> Result<(), Box<dyn Error>> {
+        storage.add_new_rss_feed(feed.clone())?;
+
+        Ok(())
+    }
+
+    /// Perform all functionality of the scheduler in one call
+    pub fn do_work<S>(&mut self, target_folder: &str, storage: &S) -> Vec<Box<dyn Error>>
+    where
+        S: RssSchedulerStorage + Send + Sync,
+    {
+        let mut errors = vec![];
+        if let Err(e) = self.load_source_feeds_from_storage(storage) {
+            errors.push(e);
+        }
+        if let Err(e) = self.load_feed_from_storage(storage) {
+            errors.push(e);
+        }
+
+        let new_feeds = self.get_feeds_from_source();
+
+        if new_feeds.len() == 0 {
+            return errors;
+        }
+
+        let base_path = Path::new(target_folder);
+        new_feeds.into_iter().for_each(|(_, new_feed)| {
+            let difference = match self.rss_feeds.get(new_feed.get_source_feed()) {
+                Some(old_feed) => {
+                    if old_feed.get_hash() == new_feed.get_hash() {
+                        return;
+                    }
+                    RssScheduler::find_new_items(&old_feed, &new_feed)
+                }
+                None => new_feed.get_items().to_vec(),
+            };
+
+            difference.iter().for_each(|item| {
+                let path = base_path.join(match item.title() {
+                    Some(v) => v,
+                    None => return,
+                });
+                // TODO: handle errors, needs to be able to keep track of failed downloads and
+                // retry later
+                // TODO: put actual downloading, currently only doing print
+                // if let Err(e) = RssFeed::save_item_to_file(&item, path) {
+                // errors.push(e);
+                // }
+                println!("From {} : {}", new_feed.get_source_feed(), path.display());
+            });
+
+            // TODO: handle errors
+            if let Err(e) = RssScheduler::store_feed_to_database(new_feed, storage) {
+                errors.push(e);
+            }
+        });
+
+        errors
+    }
+
     pub fn get_feeds_from_source(&self) -> HashMap<String, RssFeed> {
         let mut new_feeds = HashMap::new();
 
+        // TODO: do work in parallel
         for source_feed in self.source_feeds.values() {
             let feed = RssFeed::new_from_url(source_feed.url.as_str());
             if let Ok(feed) = feed {
@@ -142,7 +209,7 @@ impl RssScheduler {
     }
 
     #[allow(dead_code)]
-    fn find_new_items<'a>(old_feed: &RssFeed, new_feed: &'a RssFeed) -> Vec<&'a Item> {
+    fn find_new_items(old_feed: &RssFeed, new_feed: &RssFeed) -> Vec<Item> {
         let mut difference = vec![];
         let mut existing_guids = HashSet::with_capacity(old_feed.get_items().len());
 
@@ -167,7 +234,7 @@ impl RssScheduler {
             };
 
             if !existing_guids.contains(guid) {
-                difference.push(item);
+                difference.push(item.clone());
             }
         }
 
@@ -392,6 +459,112 @@ mod tests {
             scheduler.rss_feeds.get(SOURCE2).unwrap().get_hash(),
             feed2_hash
         );
+    }
+
+    #[test]
+    fn add_one_new_rss_feed_to_database() {
+        let storage = RssSchedulerStorageTest::new();
+        storage.add_source_feed(SourceFeed::new(SOURCE1));
+        storage.add_source_feed(SourceFeed::new(SOURCE2));
+        storage.add_source_feed(SourceFeed::new(SOURCE3));
+
+        let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
+        let feed1_hash = feed1.get_hash().to_string();
+        let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
+        let feed2_hash = feed2.get_hash().to_string();
+        let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
+        let feed3_hash = feed3.get_hash().to_string();
+        let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
+        let feed4_hash = feed4.get_hash().to_string();
+
+        assert!(storage.rss_feeds.borrow().get(SOURCE1).is_none());
+        assert!(storage.rss_feeds.borrow().get(SOURCE2).is_none());
+        assert!(storage.rss_feeds.borrow().get(SOURCE3).is_none());
+
+        RssScheduler::store_feed_to_database(feed1, &storage).unwrap();
+        RssScheduler::store_feed_to_database(feed2, &storage).unwrap();
+
+        assert_eq!(storage.rss_feeds.borrow().get(SOURCE1).unwrap().len(), 1);
+        assert_eq!(
+            storage
+                .rss_feeds
+                .borrow()
+                .get(SOURCE1)
+                .unwrap()
+                .last()
+                .unwrap()
+                .get_hash(),
+            feed1_hash
+        );
+        assert_eq!(storage.rss_feeds.borrow().get(SOURCE2).unwrap().len(), 1);
+        assert_eq!(
+            storage
+                .rss_feeds
+                .borrow()
+                .get(SOURCE2)
+                .unwrap()
+                .last()
+                .unwrap()
+                .get_hash(),
+            feed2_hash
+        );
+        assert!(storage.rss_feeds.borrow().get(SOURCE3).is_none());
+
+        RssScheduler::store_feed_to_database(feed3, &storage).unwrap();
+
+        assert_eq!(storage.rss_feeds.borrow().get(SOURCE1).unwrap().len(), 2);
+        assert_eq!(
+            storage
+                .rss_feeds
+                .borrow()
+                .get(SOURCE1)
+                .unwrap()
+                .last()
+                .unwrap()
+                .get_hash(),
+            feed3_hash
+        );
+        assert_eq!(storage.rss_feeds.borrow().get(SOURCE2).unwrap().len(), 1);
+        assert_eq!(
+            storage
+                .rss_feeds
+                .borrow()
+                .get(SOURCE2)
+                .unwrap()
+                .last()
+                .unwrap()
+                .get_hash(),
+            feed2_hash
+        );
+        assert!(storage.rss_feeds.borrow().get(SOURCE3).is_none());
+
+        RssScheduler::store_feed_to_database(feed4, &storage).unwrap();
+
+        assert_eq!(storage.rss_feeds.borrow().get(SOURCE1).unwrap().len(), 2);
+        assert_eq!(
+            storage
+                .rss_feeds
+                .borrow()
+                .get(SOURCE1)
+                .unwrap()
+                .last()
+                .unwrap()
+                .get_hash(),
+            feed3_hash
+        );
+        assert_eq!(storage.rss_feeds.borrow().get(SOURCE2).unwrap().len(), 2);
+        assert_eq!(
+            storage
+                .rss_feeds
+                .borrow()
+                .get(SOURCE2)
+                .unwrap()
+                .last()
+                .unwrap()
+                .get_hash(),
+            feed4_hash
+        );
+        assert!(storage.rss_feeds.borrow().get(SOURCE3).is_none());
     }
 
     #[test]
