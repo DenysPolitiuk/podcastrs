@@ -11,26 +11,32 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+#[allow(dead_code)]
 static DEFAULT_DATABASE_NAME: &str = "rss";
+#[allow(dead_code)]
 static DEFAULT_DATABASE_COLLECTION_SOURCE_FEED: &str = "sourcefeed";
+#[allow(dead_code)]
 static DEFAULT_DATABASE_COLLECTION_RSS_FEED: &str = "rssfeed";
 
 static DATA_FIELD: &str = "data";
 static TIMESTAMP_FIELD: &str = "timestamp";
 static SOURCE_URL_FIELD: &str = "url";
 
+#[allow(dead_code)]
 pub struct RssStorageConfig {
     pub database: String,
     pub database_source_feed_collection: String,
     pub database_rss_feed_collection: String,
 }
 
+#[allow(dead_code)]
 pub struct RssStorage {
     config: RssStorageConfig,
     client: Client,
 }
 
 impl RssStorage {
+    #[allow(dead_code)]
     pub fn new(host: &str, port: u16) -> Result<RssStorage, Box<dyn Error>> {
         let client = Client::connect(host, port)?;
         Ok(RssStorage {
@@ -68,7 +74,7 @@ impl RssSchedulerStorage for RssStorage {
             };
             let source_feed: SourceFeed = match bson::from_bson(son.clone()) {
                 Ok(v) => v,
-                Err(e) => Err("Failed to parse input BSON")?,
+                Err(e) => Err(format!("Failed to parse input BSON, error : {}", e))?,
             };
 
             results.insert(source_feed.url.clone(), source_feed);

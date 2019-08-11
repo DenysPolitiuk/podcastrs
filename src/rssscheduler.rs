@@ -15,12 +15,14 @@ pub trait RssSchedulerStorage {
     fn add_source_feed(&self, source_feed: SourceFeed) -> Result<(), Box<dyn Error>>;
 }
 
+#[allow(dead_code)]
 pub struct RssScheduler {
     source_feeds: HashMap<String, SourceFeed>,
     rss_feeds: HashMap<String, RssFeed>,
 }
 
 impl RssScheduler {
+    #[allow(dead_code)]
     pub fn new() -> RssScheduler {
         RssScheduler {
             source_feeds: HashMap::new(),
@@ -28,6 +30,7 @@ impl RssScheduler {
         }
     }
 
+    #[allow(dead_code)]
     pub fn add_source_feed(&mut self, source_feed_url: &str) -> bool {
         let url = source_feed_url.to_string();
         match self.source_feeds.entry(url) {
@@ -39,10 +42,12 @@ impl RssScheduler {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_source_feed(&self, url: &str) -> Option<&SourceFeed> {
         self.source_feeds.get(url)
     }
 
+    #[allow(dead_code)]
     pub fn add_new_feed(&mut self, new_feed: RssFeed) -> bool {
         let source_url = new_feed.get_source_feed();
         match self.rss_feeds.entry(source_url.clone()) {
@@ -62,10 +67,12 @@ impl RssScheduler {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_feed(&self, source_url: &str) -> Option<&RssFeed> {
         self.rss_feeds.get(source_url)
     }
 
+    #[allow(dead_code)]
     pub fn load_source_feeds_from_storage(
         &mut self,
         storage: &dyn RssSchedulerStorage,
@@ -74,6 +81,7 @@ impl RssScheduler {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn load_feed_from_storage(
         &mut self,
         storage: &dyn RssSchedulerStorage,
@@ -88,6 +96,7 @@ impl RssScheduler {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn store_feeds_to_database(
         &self,
         storage: &dyn RssSchedulerStorage,
@@ -103,6 +112,7 @@ impl RssScheduler {
     }
 
     // TODO: add better return with found errors
+    #[allow(dead_code)]
     pub fn load_new_feeds_from_source(&mut self) {
         let mut feeds_to_add = vec![];
         for source_feed in self.source_feeds.values() {
@@ -117,6 +127,7 @@ impl RssScheduler {
         }
     }
 
+    #[allow(dead_code)]
     fn find_new_items<'a>(old_feed: &RssFeed, new_feed: &'a RssFeed) -> Vec<&'a Item> {
         let mut difference = vec![];
         let mut existing_guids = HashSet::with_capacity(old_feed.get_items().len());
