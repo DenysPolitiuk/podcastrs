@@ -111,7 +111,21 @@ impl RssScheduler {
         Ok(())
     }
 
+    pub fn get_feeds_from_source(&self) -> HashMap<String, RssFeed> {
+        let mut new_feeds = HashMap::new();
+
+        for source_feed in self.source_feeds.values() {
+            let feed = RssFeed::new_from_url(source_feed.url.as_str());
+            if let Ok(feed) = feed {
+                new_feeds.insert(source_feed.url.clone(), feed);
+            }
+        }
+
+        new_feeds
+    }
+
     // TODO: add better return with found errors
+    // TODO: remove, should use `get_feeds_from_source` instead
     #[allow(dead_code)]
     pub fn load_new_feeds_from_source(&mut self) {
         let mut feeds_to_add = vec![];
@@ -506,6 +520,23 @@ mod tests {
                 .get(REAL_FEED_URL)
                 .unwrap()
                 .get_source_feed(),
+            REAL_FEED_URL
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn get_new_feeds_from_source() {
+        let mut scheduler = RssScheduler::new();
+        scheduler.add_source_feed(REAL_FEED_URL);
+
+        assert!(scheduler.rss_feeds.get(REAL_FEED_URL).is_none());
+
+        let new_feeds = scheduler.get_feeds_from_source();
+
+        assert!(new_feeds.get(REAL_FEED_URL).is_some());
+        assert_eq!(
+            new_feeds.get(REAL_FEED_URL).unwrap().get_source_feed(),
             REAL_FEED_URL
         );
     }
