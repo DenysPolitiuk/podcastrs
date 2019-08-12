@@ -63,7 +63,6 @@ impl RssFeed {
         self.channel.items()
     }
 
-    #[allow(dead_code)]
     pub fn save_item_to_file<P: AsRef<Path>>(
         item: &Item,
         file_name: P,
@@ -74,7 +73,6 @@ impl RssFeed {
         Ok(())
     }
 
-    #[allow(dead_code)]
     pub fn save_item<W: Write>(item: &Item, writer: &mut W) -> Result<(), Box<dyn Error>> {
         let enclosure = match item.enclosure() {
             None => Err("unable to get enclosure for the item")?,

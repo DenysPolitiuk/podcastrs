@@ -11,32 +11,26 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[allow(dead_code)]
 static DEFAULT_DATABASE_NAME: &str = "rss";
-#[allow(dead_code)]
 static DEFAULT_DATABASE_COLLECTION_SOURCE_FEED: &str = "sourcefeed";
-#[allow(dead_code)]
 static DEFAULT_DATABASE_COLLECTION_RSS_FEED: &str = "rssfeed";
 
 static DATA_FIELD: &str = "data";
 static TIMESTAMP_FIELD: &str = "timestamp";
 static SOURCE_URL_FIELD: &str = "url";
 
-#[allow(dead_code)]
 pub struct RssStorageConfig {
     pub database: String,
     pub database_source_feed_collection: String,
     pub database_rss_feed_collection: String,
 }
 
-#[allow(dead_code)]
 pub struct RssStorage {
     config: RssStorageConfig,
     client: Client,
 }
 
 impl RssStorage {
-    #[allow(dead_code)]
     pub fn new(host: &str, port: u16) -> Result<RssStorage, Box<dyn Error>> {
         let client = Client::connect(host, port)?;
         Ok(RssStorage {
@@ -165,10 +159,8 @@ mod tests {
     const SOURCE1: &str = "test1";
     const SOURCE2: &str = "test2";
     const SOURCE3: &str = "test3";
-    const INVALID_SOURCE: &str = "invalid";
 
     const FEED1_FILE: &str = "tests/sedaily.rss";
-    const FEED1_FILE2: &str = "tests/sedaily2.rss";
     const FEED2_FILE: &str = "tests/hn.rss";
 
     fn get_test_database_config() -> RssStorageConfig {

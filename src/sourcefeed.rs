@@ -6,7 +6,6 @@ pub struct SourceFeed {
 }
 
 impl SourceFeed {
-    #[allow(dead_code)]
     pub fn new(url: &str) -> SourceFeed {
         SourceFeed {
             url: url.to_string(),

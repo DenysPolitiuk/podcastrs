@@ -16,14 +16,12 @@ pub trait RssSchedulerStorage {
     fn add_source_feed(&self, source_feed: SourceFeed) -> Result<(), Box<dyn Error>>;
 }
 
-#[allow(dead_code)]
 pub struct RssScheduler {
     source_feeds: HashMap<String, SourceFeed>,
     rss_feeds: HashMap<String, RssFeed>,
 }
 
 impl RssScheduler {
-    #[allow(dead_code)]
     pub fn new() -> RssScheduler {
         RssScheduler {
             source_feeds: HashMap::new(),
@@ -31,7 +29,6 @@ impl RssScheduler {
         }
     }
 
-    #[allow(dead_code)]
     pub fn add_source_feed(&mut self, source_feed_url: &str) -> bool {
         let url = source_feed_url.to_string();
         match self.source_feeds.entry(url) {
@@ -43,12 +40,10 @@ impl RssScheduler {
         }
     }
 
-    #[allow(dead_code)]
     pub fn get_source_feed(&self, url: &str) -> Option<&SourceFeed> {
         self.source_feeds.get(url)
     }
 
-    #[allow(dead_code)]
     pub fn add_new_feed(&mut self, new_feed: RssFeed) -> bool {
         let source_url = new_feed.get_source_feed();
         match self.rss_feeds.entry(source_url.clone()) {
@@ -68,12 +63,10 @@ impl RssScheduler {
         }
     }
 
-    #[allow(dead_code)]
     pub fn get_feed(&self, source_url: &str) -> Option<&RssFeed> {
         self.rss_feeds.get(source_url)
     }
 
-    #[allow(dead_code)]
     pub fn load_source_feeds_from_storage(
         &mut self,
         storage: &dyn RssSchedulerStorage,
@@ -82,7 +75,6 @@ impl RssScheduler {
         Ok(())
     }
 
-    #[allow(dead_code)]
     pub fn load_feed_from_storage(
         &mut self,
         storage: &dyn RssSchedulerStorage,
@@ -98,7 +90,6 @@ impl RssScheduler {
     }
 
     // TODO: remove, use store_feed_to_database instead
-    #[allow(dead_code)]
     pub fn store_feeds_to_database(
         &self,
         storage: &dyn RssSchedulerStorage,
@@ -113,7 +104,6 @@ impl RssScheduler {
         Ok(())
     }
 
-    #[allow(dead_code)]
     pub fn store_feed_to_database(
         feed: RssFeed,
         storage: &dyn RssSchedulerStorage,
@@ -193,7 +183,6 @@ impl RssScheduler {
 
     // TODO: add better return with found errors
     // TODO: remove, should use `get_feeds_from_source` instead
-    #[allow(dead_code)]
     pub fn load_new_feeds_from_source(&mut self) {
         let mut feeds_to_add = vec![];
         for source_feed in self.source_feeds.values() {
@@ -208,7 +197,6 @@ impl RssScheduler {
         }
     }
 
-    #[allow(dead_code)]
     fn find_new_items(old_feed: &RssFeed, new_feed: &RssFeed) -> Vec<Item> {
         let mut difference = vec![];
         let mut existing_guids = HashSet::with_capacity(old_feed.get_items().len());
@@ -409,13 +397,13 @@ mod tests {
     #[test]
     fn retrieve_source_feeds_from_database() {
         let storage = RssSchedulerStorageTest::new();
-        storage.add_source_feed(SourceFeed::new(SOURCE1));
-        storage.add_source_feed(SourceFeed::new(SOURCE2));
-        storage.add_source_feed(SourceFeed::new(SOURCE3));
+        storage.add_source_feed(SourceFeed::new(SOURCE1)).unwrap();
+        storage.add_source_feed(SourceFeed::new(SOURCE2)).unwrap();
+        storage.add_source_feed(SourceFeed::new(SOURCE3)).unwrap();
 
         let mut scheduler = RssScheduler::new();
         assert!(scheduler.source_feeds.is_empty());
-        scheduler.load_source_feeds_from_storage(&storage);
+        scheduler.load_source_feeds_from_storage(&storage).unwrap();
 
         assert_eq!(scheduler.source_feeds.len(), 3);
 
@@ -428,9 +416,9 @@ mod tests {
     #[test]
     fn retrieve_last_rss_feed_from_database() {
         let storage = RssSchedulerStorageTest::new();
-        storage.add_source_feed(SourceFeed::new(SOURCE1));
-        storage.add_source_feed(SourceFeed::new(SOURCE2));
-        storage.add_source_feed(SourceFeed::new(SOURCE3));
+        storage.add_source_feed(SourceFeed::new(SOURCE1)).unwrap();
+        storage.add_source_feed(SourceFeed::new(SOURCE2)).unwrap();
+        storage.add_source_feed(SourceFeed::new(SOURCE3)).unwrap();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
         let feed1_hash = feed1.get_hash().to_string();
@@ -439,13 +427,13 @@ mod tests {
         let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
         let feed3_hash = feed3.get_hash().to_string();
 
-        storage.add_new_rss_feed(feed1);
-        storage.add_new_rss_feed(feed3);
-        storage.add_new_rss_feed(feed2);
+        storage.add_new_rss_feed(feed1).unwrap();
+        storage.add_new_rss_feed(feed3).unwrap();
+        storage.add_new_rss_feed(feed2).unwrap();
 
         let mut scheduler = set_up_scheduler();
         assert!(scheduler.rss_feeds.is_empty());
-        scheduler.load_feed_from_storage(&storage);
+        scheduler.load_feed_from_storage(&storage).unwrap();
 
         assert_ne!(
             scheduler.rss_feeds.get(SOURCE1).unwrap().get_hash(),
@@ -464,9 +452,9 @@ mod tests {
     #[test]
     fn add_one_new_rss_feed_to_database() {
         let storage = RssSchedulerStorageTest::new();
-        storage.add_source_feed(SourceFeed::new(SOURCE1));
-        storage.add_source_feed(SourceFeed::new(SOURCE2));
-        storage.add_source_feed(SourceFeed::new(SOURCE3));
+        storage.add_source_feed(SourceFeed::new(SOURCE1)).unwrap();
+        storage.add_source_feed(SourceFeed::new(SOURCE2)).unwrap();
+        storage.add_source_feed(SourceFeed::new(SOURCE3)).unwrap();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
         let feed1_hash = feed1.get_hash().to_string();
@@ -570,9 +558,9 @@ mod tests {
     #[test]
     fn add_new_rss_feed_to_database() {
         let storage = RssSchedulerStorageTest::new();
-        storage.add_source_feed(SourceFeed::new(SOURCE1));
-        storage.add_source_feed(SourceFeed::new(SOURCE2));
-        storage.add_source_feed(SourceFeed::new(SOURCE3));
+        storage.add_source_feed(SourceFeed::new(SOURCE1)).unwrap();
+        storage.add_source_feed(SourceFeed::new(SOURCE2)).unwrap();
+        storage.add_source_feed(SourceFeed::new(SOURCE3)).unwrap();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
         let feed1_hash = feed1.get_hash().to_string();
@@ -589,7 +577,7 @@ mod tests {
         assert!(storage.rss_feeds.borrow().get(SOURCE2).is_none());
         assert!(storage.rss_feeds.borrow().get(SOURCE3).is_none());
 
-        scheduler.store_feeds_to_database(&storage);
+        scheduler.store_feeds_to_database(&storage).unwrap();
 
         assert_eq!(storage.rss_feeds.borrow().get(SOURCE1).unwrap().len(), 1);
         assert_eq!(
@@ -618,7 +606,7 @@ mod tests {
         assert!(storage.rss_feeds.borrow().get(SOURCE3).is_none());
 
         scheduler.add_new_feed(feed3);
-        scheduler.store_feeds_to_database(&storage);
+        scheduler.store_feeds_to_database(&storage).unwrap();
 
         assert_eq!(storage.rss_feeds.borrow().get(SOURCE1).unwrap().len(), 2);
         assert_eq!(
@@ -647,7 +635,7 @@ mod tests {
         assert!(storage.rss_feeds.borrow().get(SOURCE3).is_none());
 
         scheduler.add_new_feed(feed4);
-        scheduler.store_feeds_to_database(&storage);
+        scheduler.store_feeds_to_database(&storage).unwrap();
 
         assert_eq!(storage.rss_feeds.borrow().get(SOURCE1).unwrap().len(), 3);
         assert_eq!(
