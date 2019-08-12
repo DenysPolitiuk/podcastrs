@@ -1,5 +1,6 @@
-use crate::RssFeed;
-use crate::SourceFeed;
+use common::RssFeed;
+use common::SourceFeed;
+use scheduler_trait::RssSchedulerStorage;
 
 use rss::Item;
 
@@ -8,13 +9,6 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::error::Error;
 use std::path::Path;
-
-pub trait RssSchedulerStorage {
-    fn get_source_feeds(&self) -> Result<HashMap<String, SourceFeed>, Box<dyn Error>>;
-    fn get_last_rss_feed(&self, url: &str) -> Result<Option<RssFeed>, Box<dyn Error>>;
-    fn add_new_rss_feed(&self, feed: RssFeed) -> Result<(), Box<dyn Error>>;
-    fn add_source_feed(&self, source_feed: SourceFeed) -> Result<(), Box<dyn Error>>;
-}
 
 pub struct RssScheduler {
     source_feeds: HashMap<String, SourceFeed>,
@@ -240,9 +234,9 @@ mod tests {
     const SOURCE3: &str = "test3";
     const INVALID_SOURCE: &str = "invalid";
 
-    const FEED1_FILE: &str = "tests/sedaily.rss";
-    const FEED1_FILE2: &str = "tests/sedaily2.rss";
-    const FEED2_FILE: &str = "tests/hn.rss";
+    const FEED1_FILE: &str = "../tests/sedaily.rss";
+    const FEED1_FILE2: &str = "../tests/sedaily2.rss";
+    const FEED2_FILE: &str = "../tests/hn.rss";
 
     const REAL_FEED_URL: &str = "https://softwareengineeringdaily.com/category/podcast/feed";
 

@@ -1,6 +1,7 @@
-use podcastrs::rssscheduler::RssSchedulerStorage;
-
-use podcastrs::{RssScheduler, RssStorage, SourceFeed};
+use common::SourceFeed;
+use scheduler::RssScheduler;
+use scheduler_trait::RssSchedulerStorage;
+use storage::RssStorage;
 
 static DEFAULT_HOST: &str = "localhost";
 static DEFAULT_PORT: u16 = 27017;

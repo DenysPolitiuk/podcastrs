@@ -1,6 +1,6 @@
-use crate::RssFeed;
-use crate::RssSchedulerStorage;
-use crate::SourceFeed;
+use common::RssFeed;
+use common::SourceFeed;
+use scheduler_trait::RssSchedulerStorage;
 
 use mongodb::db::ThreadedDatabase;
 use mongodb::{bson, doc};
@@ -160,8 +160,8 @@ mod tests {
     const SOURCE2: &str = "test2";
     const SOURCE3: &str = "test3";
 
-    const FEED1_FILE: &str = "tests/sedaily.rss";
-    const FEED2_FILE: &str = "tests/hn.rss";
+    const FEED1_FILE: &str = "../tests/sedaily.rss";
+    const FEED2_FILE: &str = "../tests/hn.rss";
 
     fn get_test_database_config() -> RssStorageConfig {
         RssStorageConfig {

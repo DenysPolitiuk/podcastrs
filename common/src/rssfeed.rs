@@ -89,7 +89,7 @@ impl RssFeed {
 mod tests {
     use super::*;
 
-    static TEST_FEED: &str = "tests/sedaily.rss";
+    static TEST_FEED: &str = "../tests/sedaily.rss";
     static TEST_FEED_HASH: &str = "bbebeae954a00d0426239111a5d632b366073736abaa04e080c49b280b7622c23c0e2485e4701acf77b5b541f14a34421dfb1c905e3191b15837d056950a8d8f";
     static TEST_SOURCE_FEED_URL: &str = "test";
     static REAL_FEED_URL: &str = "https://softwareengineeringdaily.com/category/podcast/feed";
