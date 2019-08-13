@@ -44,9 +44,43 @@ impl RssStorage {
             },
         })
     }
-}
 
-impl RssSchedulerStorage for RssStorage {
+    // TODO: fix unwraps
+    fn add_source_feed(&self, source_feed: SourceFeed) -> Result<(), Box<dyn Error>> {
+        let collection = self
+            .client
+            .db(&self.config.database)
+            .collection(&self.config.database_source_feed_collection);
+
+        let doc = doc! {
+            DATA_FIELD: mongodb::to_bson(&source_feed)?,
+        };
+
+        collection.insert_one(doc, None)?;
+
+        Ok(())
+    }
+
+    fn add_new_rss_feed(&self, feed: RssFeed) -> Result<(), Box<dyn Error>> {
+        let collection = self
+            .client
+            .db(&self.config.database)
+            .collection(&self.config.database_rss_feed_collection);
+
+        let start = SystemTime::now();
+        let since_the_epoch = start.duration_since(UNIX_EPOCH)?;
+
+        let doc = doc! {
+            TIMESTAMP_FIELD: format!("{}", since_the_epoch.as_millis()),
+            SOURCE_URL_FIELD: feed.get_source_feed(),
+            DATA_FIELD: mongodb::to_bson(&serde_json::to_string(&feed)?)?,
+        };
+
+        collection.insert_one(doc, None)?;
+
+        Ok(())
+    }
+
     fn get_source_feeds(&self) -> Result<HashMap<String, SourceFeed>, Box<dyn Error>> {
         let collection = self
             .client
@@ -77,6 +111,12 @@ impl RssSchedulerStorage for RssStorage {
 
         Ok(results)
     }
+}
+
+impl RssSchedulerStorage for RssStorage {
+    fn get_source_feeds(&self) -> Result<HashMap<String, SourceFeed>, Box<dyn Error>> {
+        self.get_source_feeds()
+    }
 
     fn get_last_rss_feed(&self, url: &str) -> Result<Option<RssFeed>, Box<dyn Error>> {
         let collection = self
@@ -85,10 +125,10 @@ impl RssSchedulerStorage for RssStorage {
             .collection(&self.config.database_rss_feed_collection);
 
         let find_doc = doc! {
-            SOURCE_URL_FIELD: url,
+        SOURCE_URL_FIELD: url,
         };
         let find_sort_doc = doc! {
-            TIMESTAMP_FIELD: -1,
+        TIMESTAMP_FIELD: -1,
         };
         let mut find_options = mongodb::coll::options::FindOptions::new();
         find_options.limit = Some(1);
@@ -110,45 +150,17 @@ impl RssSchedulerStorage for RssStorage {
     }
 
     fn add_new_rss_feed(&self, feed: RssFeed) -> Result<(), Box<dyn Error>> {
-        let collection = self
-            .client
-            .db(&self.config.database)
-            .collection(&self.config.database_rss_feed_collection);
-
-        let start = SystemTime::now();
-        let since_the_epoch = start.duration_since(UNIX_EPOCH)?;
-
-        let doc = doc! {
-            TIMESTAMP_FIELD: format!("{}", since_the_epoch.as_millis()),
-            SOURCE_URL_FIELD: feed.get_source_feed(),
-            DATA_FIELD: mongodb::to_bson(&serde_json::to_string(&feed)?)?,
-        };
-
-        collection.insert_one(doc, None)?;
-
-        Ok(())
+        self.add_new_rss_feed(feed)
     }
 
-    // TODO: fix unwraps
     fn add_source_feed(&self, source_feed: SourceFeed) -> Result<(), Box<dyn Error>> {
-        let collection = self
-            .client
-            .db(&self.config.database)
-            .collection(&self.config.database_source_feed_collection);
-
-        let doc = doc! {
-            DATA_FIELD: mongodb::to_bson(&source_feed)?,
-        };
-
-        collection.insert_one(doc, None)?;
-
-        Ok(())
+        self.add_source_feed(source_feed)
     }
 }
 
 impl PodRocketStorage for RssStorage {
     fn get_source_feeds(&self) -> Result<HashMap<String, SourceFeed>, Box<dyn Error>> {
-        Ok(HashMap::new())
+        self.get_source_feeds()
     }
 
     fn get_rss_feeds(&self) -> Result<HashMap<String, RssFeed>, Box<dyn Error>> {
@@ -164,11 +176,11 @@ impl PodRocketStorage for RssStorage {
     }
 
     fn add_new_rss_feed(&self, feed: RssFeed) -> Result<(), Box<dyn Error>> {
-        Ok(())
+        self.add_new_rss_feed(feed)
     }
 
     fn add_source_feed(&self, source_feed: SourceFeed) -> Result<(), Box<dyn Error>> {
-        Ok(())
+        self.add_source_feed(source_feed)
     }
 }
 
@@ -225,9 +237,9 @@ mod tests {
         stored_items.insert(source_feed2.url.clone(), source_feed2.clone());
         stored_items.insert(source_feed3.url.clone(), source_feed3.clone());
 
-        RssSchedulerStorage::add_source_feed(&storage, source_feed1).unwrap();
-        RssSchedulerStorage::add_source_feed(&storage, source_feed3).unwrap();
-        RssSchedulerStorage::add_source_feed(&storage, source_feed2).unwrap();
+        RssStorage::add_source_feed(&storage, source_feed1).unwrap();
+        RssStorage::add_source_feed(&storage, source_feed3).unwrap();
+        RssStorage::add_source_feed(&storage, source_feed2).unwrap();
 
         let cursor = coll.find(None, None).ok().expect("Failed to execute find");
 
@@ -279,11 +291,11 @@ mod tests {
         stored_items.insert(source_feed2.url.clone(), source_feed2.clone());
         stored_items.insert(source_feed3.url.clone(), source_feed3.clone());
 
-        RssSchedulerStorage::add_source_feed(&storage, source_feed1).unwrap();
-        RssSchedulerStorage::add_source_feed(&storage, source_feed3).unwrap();
-        RssSchedulerStorage::add_source_feed(&storage, source_feed2).unwrap();
+        RssStorage::add_source_feed(&storage, source_feed1).unwrap();
+        RssStorage::add_source_feed(&storage, source_feed3).unwrap();
+        RssStorage::add_source_feed(&storage, source_feed2).unwrap();
 
-        let results = RssSchedulerStorage::get_source_feeds(&storage).unwrap();
+        let results = RssStorage::get_source_feeds(&storage).unwrap();
 
         assert_eq!(results.len(), stored_items.len());
         for item in results.keys() {
@@ -328,10 +340,10 @@ mod tests {
         stored_items.insert(feed3_hash.clone(), feed3.clone());
         stored_items.insert(feed4_hash.clone(), feed4.clone());
 
-        RssSchedulerStorage::add_new_rss_feed(&storage, feed1).unwrap();
-        RssSchedulerStorage::add_new_rss_feed(&storage, feed2).unwrap();
-        RssSchedulerStorage::add_new_rss_feed(&storage, feed3).unwrap();
-        RssSchedulerStorage::add_new_rss_feed(&storage, feed4).unwrap();
+        RssStorage::add_new_rss_feed(&storage, feed1).unwrap();
+        RssStorage::add_new_rss_feed(&storage, feed2).unwrap();
+        RssStorage::add_new_rss_feed(&storage, feed3).unwrap();
+        RssStorage::add_new_rss_feed(&storage, feed4).unwrap();
 
         let cursor = coll.find(None, None).ok().expect("Failed to execute find");
 
@@ -386,19 +398,19 @@ mod tests {
 
         assert!(storage.get_last_rss_feed(SOURCE1).unwrap().is_none());
 
-        RssSchedulerStorage::add_new_rss_feed(&storage, feed1.clone()).unwrap();
+        RssStorage::add_new_rss_feed(&storage, feed1.clone()).unwrap();
         let feed = storage.get_last_rss_feed(SOURCE1).unwrap().unwrap();
         assert_eq!(feed1_hash, feed.get_hash());
 
-        RssSchedulerStorage::add_new_rss_feed(&storage, feed4.clone()).unwrap();
+        RssStorage::add_new_rss_feed(&storage, feed4.clone()).unwrap();
         let feed = storage.get_last_rss_feed(SOURCE2).unwrap().unwrap();
         assert_eq!(feed4_hash, feed.get_hash());
 
-        RssSchedulerStorage::add_new_rss_feed(&storage, feed3.clone()).unwrap();
+        RssStorage::add_new_rss_feed(&storage, feed3.clone()).unwrap();
         let feed = storage.get_last_rss_feed(SOURCE1).unwrap().unwrap();
         assert_eq!(feed3_hash, feed.get_hash());
 
-        RssSchedulerStorage::add_new_rss_feed(&storage, feed2.clone()).unwrap();
+        RssStorage::add_new_rss_feed(&storage, feed2.clone()).unwrap();
         let feed = storage.get_last_rss_feed(SOURCE2).unwrap().unwrap();
         assert_eq!(feed2_hash, feed.get_hash());
 
