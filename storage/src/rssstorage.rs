@@ -1,5 +1,6 @@
 use common::RssFeed;
 use common::SourceFeed;
+use podrocket_trait::PodRocketStorage;
 use scheduler_trait::RssSchedulerStorage;
 
 use mongodb::db::ThreadedDatabase;
@@ -145,6 +146,32 @@ impl RssSchedulerStorage for RssStorage {
     }
 }
 
+impl PodRocketStorage for RssStorage {
+    fn get_source_feeds(&self) -> Result<HashMap<String, SourceFeed>, Box<dyn Error>> {
+        Ok(HashMap::new())
+    }
+
+    fn get_rss_feeds(&self) -> Result<HashMap<String, RssFeed>, Box<dyn Error>> {
+        Ok(HashMap::new())
+    }
+
+    fn get_rss_feed_by_id(&self, id: usize) -> Result<Option<RssFeed>, Box<dyn Error>> {
+        Ok(None)
+    }
+
+    fn get_rss_feeds_by_url(&self, url: &str) -> Result<Vec<RssFeed>, Box<dyn Error>> {
+        Ok(vec![])
+    }
+
+    fn add_new_rss_feed(&self, feed: RssFeed) -> Result<(), Box<dyn Error>> {
+        Ok(())
+    }
+
+    fn add_source_feed(&self, source_feed: SourceFeed) -> Result<(), Box<dyn Error>> {
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -198,9 +225,9 @@ mod tests {
         stored_items.insert(source_feed2.url.clone(), source_feed2.clone());
         stored_items.insert(source_feed3.url.clone(), source_feed3.clone());
 
-        storage.add_source_feed(source_feed1).unwrap();
-        storage.add_source_feed(source_feed3).unwrap();
-        storage.add_source_feed(source_feed2).unwrap();
+        RssSchedulerStorage::add_source_feed(&storage, source_feed1).unwrap();
+        RssSchedulerStorage::add_source_feed(&storage, source_feed3).unwrap();
+        RssSchedulerStorage::add_source_feed(&storage, source_feed2).unwrap();
 
         let cursor = coll.find(None, None).ok().expect("Failed to execute find");
 
@@ -252,11 +279,11 @@ mod tests {
         stored_items.insert(source_feed2.url.clone(), source_feed2.clone());
         stored_items.insert(source_feed3.url.clone(), source_feed3.clone());
 
-        storage.add_source_feed(source_feed1).unwrap();
-        storage.add_source_feed(source_feed3).unwrap();
-        storage.add_source_feed(source_feed2).unwrap();
+        RssSchedulerStorage::add_source_feed(&storage, source_feed1).unwrap();
+        RssSchedulerStorage::add_source_feed(&storage, source_feed3).unwrap();
+        RssSchedulerStorage::add_source_feed(&storage, source_feed2).unwrap();
 
-        let results = storage.get_source_feeds().unwrap();
+        let results = RssSchedulerStorage::get_source_feeds(&storage).unwrap();
 
         assert_eq!(results.len(), stored_items.len());
         for item in results.keys() {
@@ -301,10 +328,10 @@ mod tests {
         stored_items.insert(feed3_hash.clone(), feed3.clone());
         stored_items.insert(feed4_hash.clone(), feed4.clone());
 
-        storage.add_new_rss_feed(feed1).unwrap();
-        storage.add_new_rss_feed(feed2).unwrap();
-        storage.add_new_rss_feed(feed3).unwrap();
-        storage.add_new_rss_feed(feed4).unwrap();
+        RssSchedulerStorage::add_new_rss_feed(&storage, feed1).unwrap();
+        RssSchedulerStorage::add_new_rss_feed(&storage, feed2).unwrap();
+        RssSchedulerStorage::add_new_rss_feed(&storage, feed3).unwrap();
+        RssSchedulerStorage::add_new_rss_feed(&storage, feed4).unwrap();
 
         let cursor = coll.find(None, None).ok().expect("Failed to execute find");
 
@@ -359,19 +386,19 @@ mod tests {
 
         assert!(storage.get_last_rss_feed(SOURCE1).unwrap().is_none());
 
-        storage.add_new_rss_feed(feed1.clone()).unwrap();
+        RssSchedulerStorage::add_new_rss_feed(&storage, feed1.clone()).unwrap();
         let feed = storage.get_last_rss_feed(SOURCE1).unwrap().unwrap();
         assert_eq!(feed1_hash, feed.get_hash());
 
-        storage.add_new_rss_feed(feed4.clone()).unwrap();
+        RssSchedulerStorage::add_new_rss_feed(&storage, feed4.clone()).unwrap();
         let feed = storage.get_last_rss_feed(SOURCE2).unwrap().unwrap();
         assert_eq!(feed4_hash, feed.get_hash());
 
-        storage.add_new_rss_feed(feed3.clone()).unwrap();
+        RssSchedulerStorage::add_new_rss_feed(&storage, feed3.clone()).unwrap();
         let feed = storage.get_last_rss_feed(SOURCE1).unwrap().unwrap();
         assert_eq!(feed3_hash, feed.get_hash());
 
-        storage.add_new_rss_feed(feed2.clone()).unwrap();
+        RssSchedulerStorage::add_new_rss_feed(&storage, feed2.clone()).unwrap();
         let feed = storage.get_last_rss_feed(SOURCE2).unwrap().unwrap();
         assert_eq!(feed2_hash, feed.get_hash());
 

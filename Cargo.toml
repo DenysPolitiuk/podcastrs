@@ -5,4 +5,5 @@ members = [
 	"scheduler-trait",
 	"storage",
 	"podrocket",
+	"podrocket-trait",
 ]
