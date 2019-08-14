@@ -2,7 +2,6 @@ use reqwest;
 use rss::{Channel, Item};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
-use tempfile::NamedTempFile;
 
 use std::error::Error;
 use std::fs::File;
@@ -15,21 +14,25 @@ pub struct RssFeed {
     channel: Channel,
     // TODO: better datatype ?
     hash: String,
-    raw_data: Vec<u8>,
+    feed_file_location: String,
 }
 
 impl RssFeed {
-    pub fn new_from_url(source_url: &str) -> Result<RssFeed, Box<dyn Error + Send + Sync>> {
-        // TODO: look into from xml RSS generation to avoid using temp files
-        let mut temp_file = NamedTempFile::new()?;
-        let _ = reqwest::get(source_url)?.copy_to(&mut temp_file);
+    pub fn new_from_url(
+        source_url: &str,
+        file_to_save: &str,
+    ) -> Result<RssFeed, Box<dyn Error + Send + Sync>> {
+        let mut f = File::create(&file_to_save)?;
+        let _ = reqwest::get(source_url)?.copy_to(&mut f);
 
-        RssFeed::new_from_file(source_url, temp_file.path())
+        let result = RssFeed::new_from_file(source_url, &file_to_save);
+
+        result
     }
 
-    pub fn new_from_file<P: AsRef<Path>>(
+    pub fn new_from_file(
         source_url: &str,
-        file_name: P,
+        file_name: &str,
     ) -> Result<RssFeed, Box<dyn Error + Send + Sync>> {
         let file = File::open(&file_name)?;
         let buf_reader = BufReader::new(&file);
@@ -47,7 +50,7 @@ impl RssFeed {
             source_feed_url: source_url.to_string(),
             channel,
             hash: format!("{:x}", hash),
-            raw_data: buffer,
+            feed_file_location: String::from(file_name),
         })
     }
 
@@ -57,6 +60,10 @@ impl RssFeed {
 
     pub fn get_hash(&self) -> &str {
         self.hash.as_str()
+    }
+
+    pub fn get_file_location(&self) -> String {
+        self.feed_file_location.clone()
     }
 
     pub fn get_items(&self) -> &[Item] {
@@ -88,6 +95,8 @@ impl RssFeed {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use tempfile::NamedTempFile;
 
     static TEST_FEED: &str = "../tests/sedaily.rss";
     static TEST_FEED_HASH: &str = "bbebeae954a00d0426239111a5d632b366073736abaa04e080c49b280b7622c23c0e2485e4701acf77b5b541f14a34421dfb1c905e3191b15837d056950a8d8f";
@@ -137,10 +146,15 @@ mod tests {
     #[test]
     #[ignore]
     fn create_feed_from_url() {
-        let feed = RssFeed::new_from_url(REAL_FEED_URL).unwrap();
+        let temp_file = NamedTempFile::new().unwrap();
+        let feed =
+            RssFeed::new_from_url(REAL_FEED_URL, temp_file.path().to_str().unwrap()).unwrap();
 
-        assert!(!feed.raw_data.is_empty());
         assert!(!feed.get_items().is_empty());
+        assert_ne!(feed.get_file_location(), "".to_string());
+
+        assert!(temp_file.as_file().metadata().unwrap().is_file());
+        assert_ne!(temp_file.as_file().metadata().unwrap().len(), 0);
     }
 
     #[test]
@@ -152,5 +166,7 @@ mod tests {
         let temp_file = NamedTempFile::new().unwrap();
 
         RssFeed::save_item_to_file(&item, temp_file.path()).unwrap();
+
+        assert_ne!(temp_file.as_file().metadata().unwrap().len(), 0);
     }
 }

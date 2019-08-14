@@ -309,9 +309,9 @@ mod tests {
 
         coll.drop().unwrap();
 
-        let source_feed1 = SourceFeed::new(SOURCE1);
-        let source_feed2 = SourceFeed::new(SOURCE2);
-        let source_feed3 = SourceFeed::new(SOURCE3);
+        let source_feed1 = SourceFeed::new(SOURCE1, "");
+        let source_feed2 = SourceFeed::new(SOURCE2, "");
+        let source_feed3 = SourceFeed::new(SOURCE3, "");
 
         let mut stored_items = HashMap::new();
         stored_items.insert(source_feed1.url.clone(), source_feed1.clone());
@@ -363,9 +363,9 @@ mod tests {
 
         coll.drop().unwrap();
 
-        let source_feed1 = SourceFeed::new(SOURCE1);
-        let source_feed2 = SourceFeed::new(SOURCE2);
-        let source_feed3 = SourceFeed::new(SOURCE3);
+        let source_feed1 = SourceFeed::new(SOURCE1, "");
+        let source_feed2 = SourceFeed::new(SOURCE2, "");
+        let source_feed3 = SourceFeed::new(SOURCE3, "");
 
         let mut stored_items = HashMap::new();
         stored_items.insert(source_feed1.url.clone(), source_feed1.clone());
