@@ -8,3 +8,7 @@ edition = "2018"
 
 [dependencies]
 rocket = { version = "0.4.2", features = ["tls"] }
+storage = { path = "../storage" }
+podrocket-trait = { path = "../podrocket-trait" }
+common = { path = "../common" }
+rocket_contrib = "0.4.2"
