@@ -203,6 +203,37 @@ impl PodRocketStorage for RssStorage {
         self.get_source_feeds()
     }
 
+    fn get_source_feed_by_url(&self, url: &str) -> Result<Option<SourceFeed>, Box<dyn Error>> {
+        let collection = self
+            .client
+            .db(&self.config.database)
+            .collection(&self.config.database_source_feed_collection);
+
+        let find_doc = doc! {
+            format!("{}.{}", DATA_FIELD, "url"): url
+        };
+        let mut find_options = mongodb::coll::options::FindOptions::new();
+        find_options.limit = Some(1);
+
+        let result = collection.find_one(Some(find_doc), Some(find_options))?;
+
+        let doc = match result {
+            None => return Ok(None),
+            Some(v) => v,
+        };
+
+        let son = match doc.get(DATA_FIELD) {
+            Some(v) => v,
+            None => Err(format!("No `{}` field in item", DATA_FIELD))?,
+        };
+        let source_feed: SourceFeed = match bson::from_bson(son.clone()) {
+            Ok(v) => v,
+            Err(e) => Err(format!("Failed to parse input BSON, error : {}", e))?,
+        };
+
+        Ok(Some(source_feed))
+    }
+
     fn get_rss_feeds(&self) -> Result<HashMap<String, Vec<RssFeed>>, Box<dyn Error>> {
         let collection = self
             .client
@@ -425,6 +456,58 @@ mod tests {
                 stored_items.get(&item.clone()).unwrap().url
             );
         }
+
+        coll.drop().unwrap();
+    }
+
+    #[test]
+    fn get_source_feed_by_url() {
+        let mut storage = RssStorage::new(DEFAULT_HOST, DEFAULT_PORT).unwrap();
+        storage.config = get_test_database_config();
+        storage.config.database_source_feed_collection = format!(
+            "{},{}",
+            storage.config.database_source_feed_collection, "get_source_feed_by_url"
+        );
+
+        let client = Client::connect(DEFAULT_HOST, DEFAULT_PORT)
+            .expect("Failed to initialize standalone client");
+        let coll = client
+            .db(&storage.config.database)
+            .collection(&storage.config.database_source_feed_collection);
+
+        coll.drop().unwrap();
+
+        let source_feed1 = SourceFeed::new(SOURCE1, "");
+        let source_feed2 = SourceFeed::new(SOURCE2, "");
+        let source_feed3 = SourceFeed::new(SOURCE3, "");
+
+        let mut stored_items = HashMap::new();
+        stored_items.insert(source_feed1.url.clone(), source_feed1.clone());
+        stored_items.insert(source_feed2.url.clone(), source_feed2.clone());
+        stored_items.insert(source_feed3.url.clone(), source_feed3.clone());
+
+        assert!(RssStorage::get_source_feed_by_url(&storage, SOURCE1)
+            .unwrap()
+            .is_none());
+
+        RssStorage::add_source_feed(&storage, source_feed1.clone()).unwrap();
+        RssStorage::add_source_feed(&storage, source_feed3.clone()).unwrap();
+        RssStorage::add_source_feed(&storage, source_feed2.clone()).unwrap();
+
+        let result = RssStorage::get_source_feed_by_url(&storage, SOURCE1)
+            .unwrap()
+            .unwrap();
+        assert_eq!(result.url, source_feed1.url);
+
+        let result = RssStorage::get_source_feed_by_url(&storage, SOURCE2)
+            .unwrap()
+            .unwrap();
+        assert_eq!(result.url, source_feed2.url);
+
+        let result = RssStorage::get_source_feed_by_url(&storage, SOURCE3)
+            .unwrap()
+            .unwrap();
+        assert_eq!(result.url, source_feed3.url);
 
         coll.drop().unwrap();
     }

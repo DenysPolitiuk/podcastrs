@@ -12,3 +12,6 @@ storage = { path = "../storage" }
 podrocket-trait = { path = "../podrocket-trait" }
 common = { path = "../common" }
 rocket_contrib = "0.4.2"
+
+[dev-dependencies]
+serde_json = "1.0.40"

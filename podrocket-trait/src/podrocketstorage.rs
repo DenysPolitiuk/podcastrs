@@ -5,6 +5,7 @@ use std::error::Error;
 
 pub trait PodRocketStorage {
     fn get_source_feeds(&self) -> Result<HashMap<String, SourceFeed>, Box<dyn Error>>;
+    fn get_source_feed_by_url(&self, url: &str) -> Result<Option<SourceFeed>, Box<dyn Error>>;
     fn get_rss_feeds(&self) -> Result<HashMap<String, Vec<RssFeed>>, Box<dyn Error>>;
     fn get_rss_feed_by_id(&self, id: &str) -> Result<Option<RssFeed>, Box<dyn Error>>;
     fn get_rss_feeds_by_url(&self, url: &str) -> Result<Vec<RssFeed>, Box<dyn Error>>;
