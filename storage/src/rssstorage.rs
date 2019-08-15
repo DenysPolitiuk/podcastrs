@@ -21,9 +21,34 @@ static TIMESTAMP_FIELD: &str = "timestamp";
 static SOURCE_URL_FIELD: &str = "url";
 
 pub struct RssStorageConfig {
-    pub database: String,
-    pub database_source_feed_collection: String,
-    pub database_rss_feed_collection: String,
+    database: String,
+    database_source_feed_collection: String,
+    database_rss_feed_collection: String,
+}
+
+impl RssStorageConfig {
+    pub fn new() -> RssStorageConfig {
+        RssStorageConfig {
+            database: DEFAULT_DATABASE_NAME.to_string(),
+            database_source_feed_collection: DEFAULT_DATABASE_COLLECTION_SOURCE_FEED.to_string(),
+            database_rss_feed_collection: DEFAULT_DATABASE_COLLECTION_RSS_FEED.to_string(),
+        }
+    }
+
+    pub fn with_database_name(mut self, database_name: &str) -> Self {
+        self.database = database_name.to_string();
+        self
+    }
+
+    pub fn with_source_feed_collection_name(mut self, source_feed_collection: &str) -> Self {
+        self.database_source_feed_collection = source_feed_collection.to_string();
+        self
+    }
+
+    pub fn with_rss_feed_collection_name(mut self, rss_feed_collection: &str) -> Self {
+        self.database_rss_feed_collection = rss_feed_collection.to_string();
+        self
+    }
 }
 
 pub struct RssStorage {
@@ -43,6 +68,11 @@ impl RssStorage {
                 database_rss_feed_collection: DEFAULT_DATABASE_COLLECTION_RSS_FEED.to_string(),
             },
         })
+    }
+
+    pub fn with_config(mut self, config: RssStorageConfig) -> Self {
+        self.config = config;
+        self
     }
 
     // TODO: fix unwraps
