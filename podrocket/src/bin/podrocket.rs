@@ -1,15 +1,14 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 use rocket::Data;
 use rocket::Rocket;
+use rocket::State;
 use rocket::{get, post, routes};
-use rocket_contrib::json::{Json, JsonValue};
+use rocket_contrib::json::Json;
 
-use std::error::Error;
-
-use common::RssFeed;
 use common::SourceFeed;
 use podrocket_trait::PodRocketStorage;
 use storage::RssStorage;
+use storage::RssStorageConfig;
 
 // TODO:
 //  Source Feed:
@@ -25,8 +24,10 @@ static DEFAULT_HOST: &str = "localhost";
 static DEFAULT_PORT: u16 = 27017;
 
 #[get("/source")]
-fn get_all_source_feeds() -> Option<Json<Vec<SourceFeed>>> {
-    let storage = RssStorage::new(DEFAULT_HOST, DEFAULT_PORT).expect("unable to create storate");
+fn get_all_source_feeds(config: State<RssStorageConfig>) -> Option<Json<Vec<SourceFeed>>> {
+    let storage = RssStorage::new(DEFAULT_HOST, DEFAULT_PORT)
+        .expect("unable to create storate")
+        .with_config(&config);
     let source_feeds = storage
         .get_source_feeds()
         .expect("unable to get source feeds");
@@ -65,8 +66,8 @@ fn get_rss_feeds_by_url(url: String) -> String {
     format!("Hello from get url {:?} rss feed", url)
 }
 
-fn make_rocket() -> Rocket {
-    rocket::ignite().mount(
+fn make_rocket(database_config: RssStorageConfig) -> Rocket {
+    rocket::ignite().manage(database_config).mount(
         "/",
         routes![
             get_all_source_feeds,
@@ -80,7 +81,7 @@ fn make_rocket() -> Rocket {
 }
 
 fn main() {
-    make_rocket().launch();
+    make_rocket(RssStorageConfig::new()).launch();
 }
 
 #[cfg(test)]
@@ -104,10 +105,26 @@ mod tests {
     static DEFAULT_DATABASE_COLLECTION_SOURCE_FEED_TEST: &str = "sourcefeed-test";
     static DEFAULT_DATABASE_COLLECTION_RSS_FEED_TEST: &str = "rssfeed-test";
 
+    fn get_test_database_config() -> RssStorageConfig {
+        RssStorageConfig::new()
+            .with_database_name(DEFAULT_DATABASE_NAME_TEST)
+            .with_source_feed_collection_name(DEFAULT_DATABASE_COLLECTION_SOURCE_FEED_TEST)
+            .with_rss_feed_collection_name(DEFAULT_DATABASE_COLLECTION_RSS_FEED_TEST)
+    }
+
     #[test]
     fn verify_get_all_source_feeds() {
-        let storage =
-            RssStorage::new(DEFAULT_HOST, DEFAULT_PORT).expect("unable to create storage");
+        let test_collection = format!(
+            "{}.{}",
+            DEFAULT_DATABASE_COLLECTION_SOURCE_FEED_TEST, "podrocket_verify_get_all_source_feeds"
+        );
+        let database_config =
+            get_test_database_config().with_source_feed_collection_name(test_collection.as_str());
+        let storage = RssStorage::new(DEFAULT_HOST, DEFAULT_PORT)
+            .expect("unable to create storage")
+            .with_config(&database_config);
+
+        storage.drop_collection(test_collection.as_str()).unwrap();
 
         let source1 = SourceFeed::new(SOURCE1, "");
         let source2 = SourceFeed::new(SOURCE2, "");
@@ -117,7 +134,7 @@ mod tests {
         storage.add_source_feed(source2).unwrap();
         storage.add_source_feed(source3).unwrap();
 
-        let rocket = make_rocket();
+        let rocket = make_rocket(database_config);
         let client = Client::new(rocket).expect("not a valid rocket instance");
         let mut res = client.get(SOURCE_FEED_URL).dispatch();
 
@@ -127,6 +144,8 @@ mod tests {
         assert!(res_body.contains(SOURCE1));
         assert!(res_body.contains(SOURCE2));
         assert!(res_body.contains(SOURCE3));
+
+        storage.drop_collection(test_collection.as_str()).unwrap();
     }
 
     #[test]
