@@ -1,14 +1,14 @@
+use common::MiniItem;
 use common::RssFeed;
 use common::SourceFeed;
 use scheduler_trait::RssSchedulerStorage;
-
-use rss::Item;
 
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::error::Error;
 use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct RssScheduler {
     source_feeds: HashMap<String, SourceFeed>,
@@ -23,12 +23,12 @@ impl RssScheduler {
         }
     }
 
-    pub fn add_source_feed(&mut self, source_feed_url: &str) -> bool {
+    pub fn add_source_feed(&mut self, source_feed_url: &str, source_feed_title: &str) -> bool {
         let url = source_feed_url.to_string();
         match self.source_feeds.entry(url) {
             Entry::Occupied(_) => false,
             Entry::Vacant(v) => {
-                v.insert(SourceFeed::new(source_feed_url));
+                v.insert(SourceFeed::new(source_feed_url, source_feed_title));
                 true
             }
         }
@@ -139,7 +139,7 @@ impl RssScheduler {
             };
 
             difference.iter().for_each(|item| {
-                let path = base_path.join(match item.title() {
+                let path = base_path.join(match item.get_title() {
                     Some(v) => v,
                     None => return,
                 });
@@ -166,7 +166,16 @@ impl RssScheduler {
 
         // TODO: do work in parallel
         for source_feed in self.source_feeds.values() {
-            let feed = RssFeed::new_from_url(source_feed.url.as_str());
+            let start = SystemTime::now();
+            let since_the_epoch = start
+                .duration_since(UNIX_EPOCH)
+                .expect("unix epoch unavailable");
+            let feed_file_name = format!(
+                "{}_{}",
+                source_feed.get_title(),
+                since_the_epoch.as_millis()
+            );
+            let feed = RssFeed::new_from_url(source_feed.url.as_str(), feed_file_name.as_str());
             if let Ok(feed) = feed {
                 new_feeds.insert(source_feed.url.clone(), feed);
             }
@@ -175,44 +184,28 @@ impl RssScheduler {
         new_feeds
     }
 
-    // TODO: add better return with found errors
-    // TODO: remove, should use `get_feeds_from_source` instead
-    pub fn load_new_feeds_from_source(&mut self) {
-        let mut feeds_to_add = vec![];
-        for source_feed in self.source_feeds.values() {
-            let feed = RssFeed::new_from_url(source_feed.url.as_str());
-            if let Ok(feed) = feed {
-                feeds_to_add.push(feed);
-            }
-        }
-
-        for feed in feeds_to_add {
-            self.add_new_feed(feed);
-        }
-    }
-
-    fn find_new_items(old_feed: &RssFeed, new_feed: &RssFeed) -> Vec<Item> {
+    fn find_new_items(old_feed: &RssFeed, new_feed: &RssFeed) -> Vec<MiniItem> {
         let mut difference = vec![];
         let mut existing_guids = HashSet::with_capacity(old_feed.get_items().len());
 
         for item in old_feed.get_items() {
-            let guid = match item.guid() {
+            let guid = match item.get_guid() {
                 // using guids to compare items in the feed so if it doesn't exist panic
                 // in future might have to create a different way to compare items if
                 // guid is not present
                 None => panic!("Item has to have a guid to allow for comparison"),
-                Some(v) => v.value(),
+                Some(v) => v,
             };
             existing_guids.insert(guid);
         }
 
         for item in new_feed.get_items() {
-            let guid = match item.guid() {
+            let guid = match item.get_guid() {
                 // using guids to compare items in the feed so if it doesn't exist panic
                 // in future might have to create a different way to compare items if
                 // guid is not present
                 None => panic!("Item has to have a guid to allow for comparison"),
-                Some(v) => v.value(),
+                Some(v) => v,
             };
 
             if !existing_guids.contains(guid) {
@@ -228,6 +221,8 @@ impl RssScheduler {
 mod tests {
     use super::*;
     use std::cell::RefCell;
+
+    use tempfile::NamedTempFile;
 
     const SOURCE1: &str = "test1";
     const SOURCE2: &str = "test2";
@@ -285,9 +280,9 @@ mod tests {
 
     fn set_up_scheduler() -> RssScheduler {
         let mut scheduler = RssScheduler::new();
-        scheduler.add_source_feed(SOURCE1);
-        scheduler.add_source_feed(SOURCE2);
-        scheduler.add_source_feed(SOURCE3);
+        scheduler.add_source_feed(SOURCE1, "");
+        scheduler.add_source_feed(SOURCE2, "");
+        scheduler.add_source_feed(SOURCE3, "");
 
         scheduler
     }
@@ -309,10 +304,10 @@ mod tests {
         let mut scheduler = RssScheduler::new();
 
         assert_eq!(scheduler.source_feeds.len(), 0);
-        assert_eq!(scheduler.add_source_feed(SOURCE1), true);
-        assert_eq!(scheduler.add_source_feed(SOURCE2), true);
-        assert_eq!(scheduler.add_source_feed(SOURCE2), false);
-        assert_eq!(scheduler.add_source_feed(SOURCE3), true);
+        assert_eq!(scheduler.add_source_feed(SOURCE1, ""), true);
+        assert_eq!(scheduler.add_source_feed(SOURCE2, ""), true);
+        assert_eq!(scheduler.add_source_feed(SOURCE2, ""), false);
+        assert_eq!(scheduler.add_source_feed(SOURCE3, ""), true);
         assert_eq!(scheduler.source_feeds.len(), 3);
     }
 
@@ -391,9 +386,15 @@ mod tests {
     #[test]
     fn retrieve_source_feeds_from_database() {
         let storage = RssSchedulerStorageTest::new();
-        storage.add_source_feed(SourceFeed::new(SOURCE1)).unwrap();
-        storage.add_source_feed(SourceFeed::new(SOURCE2)).unwrap();
-        storage.add_source_feed(SourceFeed::new(SOURCE3)).unwrap();
+        storage
+            .add_source_feed(SourceFeed::new(SOURCE1, ""))
+            .unwrap();
+        storage
+            .add_source_feed(SourceFeed::new(SOURCE2, ""))
+            .unwrap();
+        storage
+            .add_source_feed(SourceFeed::new(SOURCE3, ""))
+            .unwrap();
 
         let mut scheduler = RssScheduler::new();
         assert!(scheduler.source_feeds.is_empty());
@@ -410,9 +411,15 @@ mod tests {
     #[test]
     fn retrieve_last_rss_feed_from_database() {
         let storage = RssSchedulerStorageTest::new();
-        storage.add_source_feed(SourceFeed::new(SOURCE1)).unwrap();
-        storage.add_source_feed(SourceFeed::new(SOURCE2)).unwrap();
-        storage.add_source_feed(SourceFeed::new(SOURCE3)).unwrap();
+        storage
+            .add_source_feed(SourceFeed::new(SOURCE1, ""))
+            .unwrap();
+        storage
+            .add_source_feed(SourceFeed::new(SOURCE2, ""))
+            .unwrap();
+        storage
+            .add_source_feed(SourceFeed::new(SOURCE3, ""))
+            .unwrap();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
         let feed1_hash = feed1.get_hash().to_string();
@@ -446,9 +453,15 @@ mod tests {
     #[test]
     fn add_one_new_rss_feed_to_database() {
         let storage = RssSchedulerStorageTest::new();
-        storage.add_source_feed(SourceFeed::new(SOURCE1)).unwrap();
-        storage.add_source_feed(SourceFeed::new(SOURCE2)).unwrap();
-        storage.add_source_feed(SourceFeed::new(SOURCE3)).unwrap();
+        storage
+            .add_source_feed(SourceFeed::new(SOURCE1, ""))
+            .unwrap();
+        storage
+            .add_source_feed(SourceFeed::new(SOURCE2, ""))
+            .unwrap();
+        storage
+            .add_source_feed(SourceFeed::new(SOURCE3, ""))
+            .unwrap();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
         let feed1_hash = feed1.get_hash().to_string();
@@ -552,9 +565,15 @@ mod tests {
     #[test]
     fn add_new_rss_feed_to_database() {
         let storage = RssSchedulerStorageTest::new();
-        storage.add_source_feed(SourceFeed::new(SOURCE1)).unwrap();
-        storage.add_source_feed(SourceFeed::new(SOURCE2)).unwrap();
-        storage.add_source_feed(SourceFeed::new(SOURCE3)).unwrap();
+        storage
+            .add_source_feed(SourceFeed::new(SOURCE1, ""))
+            .unwrap();
+        storage
+            .add_source_feed(SourceFeed::new(SOURCE2, ""))
+            .unwrap();
+        storage
+            .add_source_feed(SourceFeed::new(SOURCE3, ""))
+            .unwrap();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
         let feed1_hash = feed1.get_hash().to_string();
@@ -660,30 +679,10 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn load_new_feeds_from_url() {
-        let mut scheduler = RssScheduler::new();
-        scheduler.add_source_feed(REAL_FEED_URL);
-
-        assert!(scheduler.rss_feeds.get(REAL_FEED_URL).is_none());
-
-        scheduler.load_new_feeds_from_source();
-
-        assert!(scheduler.rss_feeds.get(REAL_FEED_URL).is_some());
-        assert_eq!(
-            scheduler
-                .rss_feeds
-                .get(REAL_FEED_URL)
-                .unwrap()
-                .get_source_feed(),
-            REAL_FEED_URL
-        );
-    }
-
-    #[test]
-    #[ignore]
     fn get_new_feeds_from_source() {
         let mut scheduler = RssScheduler::new();
-        scheduler.add_source_feed(REAL_FEED_URL);
+        let temp_file = NamedTempFile::new().unwrap();
+        scheduler.add_source_feed(REAL_FEED_URL, temp_file.path().to_str().unwrap());
 
         assert!(scheduler.rss_feeds.get(REAL_FEED_URL).is_none());
 
@@ -710,13 +709,10 @@ mod tests {
             "http://softwareengineeringdaily.com/?p=7813",
             "http://softwareengineeringdaily.com/?p=7781",
         ];
-        let difference_guids: Vec<_> = difference
-            .iter()
-            .map(|i| i.guid().unwrap().value())
-            .collect();
+        let difference_guids: Vec<_> = difference.iter().map(|i| i.get_guid().unwrap()).collect();
 
         for item in &difference {
-            println!("{}", item.guid().unwrap().value());
+            println!("{}", item.get_guid().unwrap());
         }
 
         assert!(!difference.is_empty());

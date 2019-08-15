@@ -14,9 +14,12 @@ fn main() {
             return;
         }
     };
-    let default_feed_sources = vec!["https://softwareengineeringdaily.com/category/podcast/feed"];
-    for feed_source in default_feed_sources {
-        if let Err(e) = storage.add_source_feed(SourceFeed::new(feed_source)) {
+    let default_feed_sources = vec![(
+        "https://softwareengineeringdaily.com/category/podcast/feed",
+        "SE Daily",
+    )];
+    for (feed_source, title) in default_feed_sources {
+        if let Err(e) = storage.add_source_feed(SourceFeed::new(feed_source, title)) {
             println!(
                 "Error adding source feed {} to storage : {}",
                 feed_source, e
