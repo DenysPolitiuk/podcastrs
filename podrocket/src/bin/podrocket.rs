@@ -93,6 +93,12 @@ mod tests {
     use rocket::http::Status;
     use rocket::local::Client;
 
+    use common::{RssFeed, SourceFeed};
+
+    use std::collections::HashMap;
+    use std::error::Error;
+    use std::sync::Mutex;
+
     static SOURCE_FEED_URL: &str = "/source";
     static RSS_FEED_URL: &str = "/rss";
 
@@ -103,30 +109,72 @@ mod tests {
     const FEED1_FILE: &str = "../tests/sedaily.rss";
     const FEED2_FILE: &str = "../tests/hn.rss";
 
-    static DEFAULT_DATABASE_NAME_TEST: &str = "rss-test";
-    static DEFAULT_DATABASE_COLLECTION_SOURCE_FEED_TEST: &str = "sourcefeed-test";
-    static DEFAULT_DATABASE_COLLECTION_RSS_FEED_TEST: &str = "rssfeed-test";
+    struct PodRocketStorageTest {
+        source_feeds: Mutex<HashMap<String, SourceFeed>>,
+        rss_feeds: Mutex<HashMap<String, Vec<RssFeed>>>,
+    }
 
-    fn get_test_database_config() -> RssStorageConfig {
-        RssStorageConfig::new()
-            .with_database_name(DEFAULT_DATABASE_NAME_TEST)
-            .with_source_feed_collection_name(DEFAULT_DATABASE_COLLECTION_SOURCE_FEED_TEST)
-            .with_rss_feed_collection_name(DEFAULT_DATABASE_COLLECTION_RSS_FEED_TEST)
+    impl PodRocketStorageTest {
+        pub fn new() -> PodRocketStorageTest {
+            PodRocketStorageTest {
+                source_feeds: Mutex::new(HashMap::new()),
+                rss_feeds: Mutex::new(HashMap::new()),
+            }
+        }
+    }
+
+    impl PodRocketStorage for PodRocketStorageTest {
+        fn get_rss_feeds(&self) -> Result<HashMap<String, Vec<RssFeed>>, Box<dyn Error>> {
+            Ok(self.rss_feeds.lock().unwrap().clone())
+        }
+
+        fn get_rss_feed_by_id(&self, id: &str) -> Result<Option<RssFeed>, Box<dyn Error>> {
+            for feeds in self.rss_feeds.lock().unwrap().values() {
+                for feed in feeds {
+                    if feed.get_hash() == id {
+                        return Ok(Some(feed.clone()));
+                    }
+                }
+            }
+
+            Ok(None)
+        }
+
+        fn get_rss_feeds_by_url(&self, url: &str) -> Result<Vec<RssFeed>, Box<dyn Error>> {
+            Ok(match self.rss_feeds.lock().unwrap().get(url) {
+                Some(v) => v.clone(),
+                None => vec![],
+            })
+        }
+
+        fn get_source_feeds(&self) -> Result<HashMap<String, SourceFeed>, Box<dyn Error>> {
+            Ok(self.source_feeds.lock().unwrap().clone())
+        }
+
+        fn add_new_rss_feed(&self, feed: RssFeed) -> Result<(), Box<dyn Error>> {
+            self.rss_feeds
+                .lock()
+                .unwrap()
+                .entry(feed.get_source_feed().clone())
+                .or_insert(vec![])
+                .push(feed);
+
+            Ok(())
+        }
+
+        fn add_source_feed(&self, source_feed: SourceFeed) -> Result<(), Box<dyn Error>> {
+            self.source_feeds
+                .lock()
+                .unwrap()
+                .insert(source_feed.url.clone(), source_feed);
+
+            Ok(())
+        }
     }
 
     #[test]
     fn verify_get_all_source_feeds() {
-        let test_collection = format!(
-            "{}.{}",
-            DEFAULT_DATABASE_COLLECTION_SOURCE_FEED_TEST, "podrocket_verify_get_all_source_feeds"
-        );
-        let database_config =
-            get_test_database_config().with_source_feed_collection_name(test_collection.as_str());
-        let storage = RssStorage::new(DEFAULT_HOST, DEFAULT_PORT)
-            .expect("unable to create storage")
-            .with_config(&database_config);
-
-        storage.drop_collection(test_collection.as_str()).unwrap();
+        let storage = PodRocketStorageTest::new();
 
         let source1 = SourceFeed::new(SOURCE1, "");
         let source2 = SourceFeed::new(SOURCE2, "");
@@ -146,8 +194,6 @@ mod tests {
         assert!(res_body.contains(SOURCE1));
         assert!(res_body.contains(SOURCE2));
         assert!(res_body.contains(SOURCE3));
-
-        // storage.drop_collection(test_collection.as_str()).unwrap();
     }
 
     #[test]
