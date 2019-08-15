@@ -20,6 +20,7 @@ static DATA_FIELD: &str = "data";
 static TIMESTAMP_FIELD: &str = "timestamp";
 static SOURCE_URL_FIELD: &str = "url";
 
+#[derive(Clone)]
 pub struct RssStorageConfig {
     database: String,
     database_source_feed_collection: String,
@@ -70,8 +71,8 @@ impl RssStorage {
         })
     }
 
-    pub fn with_config(mut self, config: RssStorageConfig) -> Self {
-        self.config = config;
+    pub fn with_config(mut self, config: &RssStorageConfig) -> Self {
+        self.config = config.clone();
         self
     }
 
