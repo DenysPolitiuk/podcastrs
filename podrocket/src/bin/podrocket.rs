@@ -5,6 +5,8 @@ use rocket::State;
 use rocket::{get, post, routes};
 use rocket_contrib::json::Json;
 
+use std::sync::Arc;
+
 use common::SourceFeed;
 use podrocket_trait::PodRocketStorage;
 use storage::RssStorage;
@@ -23,11 +25,10 @@ use storage::RssStorageConfig;
 static DEFAULT_HOST: &str = "localhost";
 static DEFAULT_PORT: u16 = 27017;
 
+type Storage = dyn PodRocketStorage + Send + Sync;
+
 #[get("/source")]
-fn get_all_source_feeds(config: State<RssStorageConfig>) -> Option<Json<Vec<SourceFeed>>> {
-    let storage = RssStorage::new(DEFAULT_HOST, DEFAULT_PORT)
-        .expect("unable to create storate")
-        .with_config(&config);
+fn get_all_source_feeds(storage: State<Arc<Storage>>) -> Option<Json<Vec<SourceFeed>>> {
     let source_feeds = storage
         .get_source_feeds()
         .expect("unable to get source feeds");
@@ -66,8 +67,8 @@ fn get_rss_feeds_by_url(url: String) -> String {
     format!("Hello from get url {:?} rss feed", url)
 }
 
-fn make_rocket(database_config: RssStorageConfig) -> Rocket {
-    rocket::ignite().manage(database_config).mount(
+fn make_rocket(database_client: Arc<Storage>) -> Rocket {
+    rocket::ignite().manage(database_client).mount(
         "/",
         routes![
             get_all_source_feeds,
@@ -81,7 +82,8 @@ fn make_rocket(database_config: RssStorageConfig) -> Rocket {
 }
 
 fn main() {
-    make_rocket(RssStorageConfig::new()).launch();
+    let storage = RssStorage::new(DEFAULT_HOST, DEFAULT_PORT).expect("unable to create storate");
+    make_rocket(Arc::new(storage)).launch();
 }
 
 #[cfg(test)]
@@ -134,7 +136,7 @@ mod tests {
         storage.add_source_feed(source2).unwrap();
         storage.add_source_feed(source3).unwrap();
 
-        let rocket = make_rocket(database_config);
+        let rocket = make_rocket(Arc::new(storage));
         let client = Client::new(rocket).expect("not a valid rocket instance");
         let mut res = client.get(SOURCE_FEED_URL).dispatch();
 
@@ -145,7 +147,7 @@ mod tests {
         assert!(res_body.contains(SOURCE2));
         assert!(res_body.contains(SOURCE3));
 
-        storage.drop_collection(test_collection.as_str()).unwrap();
+        // storage.drop_collection(test_collection.as_str()).unwrap();
     }
 
     #[test]
