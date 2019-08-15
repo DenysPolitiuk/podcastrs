@@ -1,8 +1,7 @@
+use common::MiniItem;
 use common::RssFeed;
 use common::SourceFeed;
 use scheduler_trait::RssSchedulerStorage;
-
-use rss::Item;
 
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -140,7 +139,7 @@ impl RssScheduler {
             };
 
             difference.iter().for_each(|item| {
-                let path = base_path.join(match item.title() {
+                let path = base_path.join(match item.get_title() {
                     Some(v) => v,
                     None => return,
                 });
@@ -185,28 +184,28 @@ impl RssScheduler {
         new_feeds
     }
 
-    fn find_new_items(old_feed: &RssFeed, new_feed: &RssFeed) -> Vec<Item> {
+    fn find_new_items(old_feed: &RssFeed, new_feed: &RssFeed) -> Vec<MiniItem> {
         let mut difference = vec![];
         let mut existing_guids = HashSet::with_capacity(old_feed.get_items().len());
 
         for item in old_feed.get_items() {
-            let guid = match item.guid() {
+            let guid = match item.get_guid() {
                 // using guids to compare items in the feed so if it doesn't exist panic
                 // in future might have to create a different way to compare items if
                 // guid is not present
                 None => panic!("Item has to have a guid to allow for comparison"),
-                Some(v) => v.value(),
+                Some(v) => v,
             };
             existing_guids.insert(guid);
         }
 
         for item in new_feed.get_items() {
-            let guid = match item.guid() {
+            let guid = match item.get_guid() {
                 // using guids to compare items in the feed so if it doesn't exist panic
                 // in future might have to create a different way to compare items if
                 // guid is not present
                 None => panic!("Item has to have a guid to allow for comparison"),
-                Some(v) => v.value(),
+                Some(v) => v,
             };
 
             if !existing_guids.contains(guid) {
@@ -710,13 +709,10 @@ mod tests {
             "http://softwareengineeringdaily.com/?p=7813",
             "http://softwareengineeringdaily.com/?p=7781",
         ];
-        let difference_guids: Vec<_> = difference
-            .iter()
-            .map(|i| i.guid().unwrap().value())
-            .collect();
+        let difference_guids: Vec<_> = difference.iter().map(|i| i.get_guid().unwrap()).collect();
 
         for item in &difference {
-            println!("{}", item.guid().unwrap().value());
+            println!("{}", item.get_guid().unwrap());
         }
 
         assert!(!difference.is_empty());
