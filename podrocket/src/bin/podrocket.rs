@@ -109,9 +109,9 @@ mod tests {
         let storage =
             RssStorage::new(DEFAULT_HOST, DEFAULT_PORT).expect("unable to create storage");
 
-        let source1 = SourceFeed::new(SOURCE1);
-        let source2 = SourceFeed::new(SOURCE2);
-        let source3 = SourceFeed::new(SOURCE3);
+        let source1 = SourceFeed::new(SOURCE1, "");
+        let source2 = SourceFeed::new(SOURCE2, "");
+        let source3 = SourceFeed::new(SOURCE3, "");
 
         storage.add_source_feed(source1).unwrap();
         storage.add_source_feed(source2).unwrap();
