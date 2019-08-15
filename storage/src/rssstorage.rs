@@ -75,6 +75,15 @@ impl RssStorage {
         self
     }
 
+    pub fn drop_collection(&self, collection_name: &str) -> Result<(), Box<dyn Error>> {
+        self.client
+            .db(&self.config.database)
+            .collection(collection_name)
+            .drop()?;
+
+        Ok(())
+    }
+
     // TODO: fix unwraps
     fn add_source_feed(&self, source_feed: SourceFeed) -> Result<(), Box<dyn Error>> {
         let collection = self
