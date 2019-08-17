@@ -86,7 +86,7 @@ impl RssStorage {
     }
 
     // TODO: fix unwraps
-    fn add_source_feed(&self, source_feed: SourceFeed) -> Result<(), Box<dyn Error>> {
+    pub fn add_source_feed(&self, source_feed: SourceFeed) -> Result<(), Box<dyn Error>> {
         let collection = self
             .client
             .db(&self.config.database)
