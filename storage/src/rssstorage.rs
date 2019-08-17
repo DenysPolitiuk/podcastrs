@@ -101,7 +101,7 @@ impl RssStorage {
         Ok(())
     }
 
-    fn add_new_rss_feed(&self, feed: RssFeed) -> Result<(), Box<dyn Error>> {
+    pub fn add_new_rss_feed(&self, feed: RssFeed) -> Result<(), Box<dyn Error>> {
         let collection = self
             .client
             .db(&self.config.database)
@@ -121,7 +121,7 @@ impl RssStorage {
         Ok(())
     }
 
-    fn get_source_feeds(&self) -> Result<HashMap<String, SourceFeed>, Box<dyn Error>> {
+    pub fn get_source_feeds(&self) -> Result<HashMap<String, SourceFeed>, Box<dyn Error>> {
         let collection = self
             .client
             .db(&self.config.database)
