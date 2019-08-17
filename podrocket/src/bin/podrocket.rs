@@ -4,6 +4,7 @@ use rocket::State;
 use rocket::{get, post, routes};
 use rocket_contrib::json::Json;
 
+use std::env;
 use std::error::Error;
 use std::sync::Arc;
 
@@ -14,6 +15,9 @@ use storage::RssStorage;
 
 static DEFAULT_HOST: &str = "localhost";
 static DEFAULT_PORT: u16 = 27017;
+
+static HOST_ENV_VAR: &str = "RSS_DATABASE_HOST";
+static PORT_ENV_VAR: &str = "RSS_DATABASE_PORT";
 
 type Storage = dyn PodRocketStorage + Send + Sync;
 
@@ -80,7 +84,20 @@ fn make_rocket(database_client: Arc<Storage>) -> Rocket {
 }
 
 fn main() {
-    let storage = RssStorage::new(DEFAULT_HOST, DEFAULT_PORT).expect("unable to create storate");
+    let storage = RssStorage::new(
+        env::var(HOST_ENV_VAR)
+            .ok()
+            .or(Some(DEFAULT_HOST.to_string()))
+            .unwrap()
+            .as_str(),
+        env::var(PORT_ENV_VAR)
+            .ok()
+            .or(Some(DEFAULT_PORT.to_string()))
+            .unwrap()
+            .parse::<u16>()
+            .expect("invalid port provided in env vars"),
+    )
+    .expect("unable to create storate");
     make_rocket(Arc::new(storage)).launch();
 }
 
