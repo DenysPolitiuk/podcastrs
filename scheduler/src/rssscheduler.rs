@@ -3,10 +3,13 @@ use common::RssFeed;
 use common::SourceFeed;
 use scheduler_trait::RssSchedulerStorage;
 
+use tempfile::TempDir;
+
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::error::Error;
+use std::io;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -108,7 +111,12 @@ impl RssScheduler {
     }
 
     /// Perform all functionality of the scheduler in one call
-    pub fn do_work<S>(&mut self, target_folder: Option<&str>, storage: &S) -> Vec<Box<dyn Error>>
+    pub fn do_work<S>(
+        &mut self,
+        storage: &S,
+        target_folder: Option<&str>,
+        feed_folder: Option<&str>,
+    ) -> Vec<Box<dyn Error>>
     where
         S: RssSchedulerStorage + Send + Sync,
     {
@@ -120,7 +128,38 @@ impl RssScheduler {
             errors.push(e);
         }
 
-        let new_feeds = self.get_feeds_from_source();
+        let new_feeds = match feed_folder {
+            None => {
+                let temp_folder = match TempDir::new() {
+                    Err(e) => {
+                        errors.push(Box::new(e));
+                        return errors;
+                    }
+                    Ok(v) => v,
+                };
+                let temp_folder_path = match temp_folder.path().to_str() {
+                    None => {
+                        errors.push(Box::new(io::Error::new(
+                            io::ErrorKind::Other,
+                            "unable to get path of temp folder",
+                        )));
+                        return errors;
+                    }
+                    Some(v) => v,
+                };
+
+                self.get_feeds_from_source(temp_folder_path)
+            }
+            Some(v) => self.get_feeds_from_source(v),
+        };
+
+        let new_feeds = match new_feeds {
+            Ok(v) => v,
+            Err(e) => {
+                errors.push(e);
+                return errors;
+            }
+        };
 
         if new_feeds.len() == 0 {
             return errors;
@@ -162,7 +201,10 @@ impl RssScheduler {
         errors
     }
 
-    pub fn get_feeds_from_source(&self) -> HashMap<String, RssFeed> {
+    pub fn get_feeds_from_source(
+        &self,
+        feed_folder: &str,
+    ) -> Result<HashMap<String, RssFeed>, Box<dyn Error>> {
         let mut new_feeds = HashMap::new();
 
         // TODO: do work in parallel
@@ -176,13 +218,17 @@ impl RssScheduler {
                 source_feed.get_title(),
                 since_the_epoch.as_millis()
             );
-            let feed = RssFeed::new_from_url(source_feed.url.as_str(), feed_file_name.as_str());
+            let feed_path = Path::new(feed_folder).join(Path::new(&feed_file_name));
+            let feed = RssFeed::new_from_url(
+                source_feed.url.as_str(),
+                feed_path.to_str().ok_or("unable to ")?,
+            );
             if let Ok(feed) = feed {
                 new_feeds.insert(source_feed.url.clone(), feed);
             }
         }
 
-        new_feeds
+        Ok(new_feeds)
     }
 
     fn find_new_items(old_feed: &RssFeed, new_feed: &RssFeed) -> Vec<MiniItem> {
@@ -687,7 +733,16 @@ mod tests {
 
         assert!(scheduler.rss_feeds.get(REAL_FEED_URL).is_none());
 
-        let new_feeds = scheduler.get_feeds_from_source();
+        let temp_folder = TempDir::new().expect("unable to create temp dir");
+
+        let new_feeds = scheduler
+            .get_feeds_from_source(
+                temp_folder
+                    .path()
+                    .to_str()
+                    .expect("unable to get path of temp folder"),
+            )
+            .unwrap();
 
         assert!(new_feeds.get(REAL_FEED_URL).is_some());
         assert_eq!(

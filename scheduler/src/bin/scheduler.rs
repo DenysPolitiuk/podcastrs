@@ -32,7 +32,7 @@ fn main() {
 
     let mut scheduler = RssScheduler::new();
     scheduler
-        .do_work(None, &storage)
+        .do_work(&storage, None, None)
         .iter()
         .for_each(|e| println!("Error from do work : {}", e));
 }
