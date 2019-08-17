@@ -108,7 +108,7 @@ impl RssScheduler {
     }
 
     /// Perform all functionality of the scheduler in one call
-    pub fn do_work<S>(&mut self, target_folder: &str, storage: &S) -> Vec<Box<dyn Error>>
+    pub fn do_work<S>(&mut self, target_folder: Option<&str>, storage: &S) -> Vec<Box<dyn Error>>
     where
         S: RssSchedulerStorage + Send + Sync,
     {
@@ -126,7 +126,6 @@ impl RssScheduler {
             return errors;
         }
 
-        let base_path = Path::new(target_folder);
         new_feeds.into_iter().for_each(|(_, new_feed)| {
             let difference = match self.rss_feeds.get(new_feed.get_source_feed()) {
                 Some(old_feed) => {
@@ -138,19 +137,21 @@ impl RssScheduler {
                 None => new_feed.get_items().to_vec(),
             };
 
-            difference.iter().for_each(|item| {
-                let path = base_path.join(match item.get_title() {
-                    Some(v) => v,
-                    None => return,
+            if let Some(target_folder) = target_folder {
+                let base_path = Path::new(target_folder);
+                difference.iter().for_each(|item| {
+                    let path = base_path.join(match item.get_title() {
+                        Some(v) => v,
+                        None => return,
+                    });
+                    // TODO: handle errors, needs to be able to keep track of failed downloads and
+                    // retry later
+                    // TODO: put actual downloading, currently only doing print
+                    if let Err(e) = RssFeed::save_item_to_file(&item, &path) {
+                        errors.push(e);
+                    }
                 });
-                // TODO: handle errors, needs to be able to keep track of failed downloads and
-                // retry later
-                // TODO: put actual downloading, currently only doing print
-                // if let Err(e) = RssFeed::save_item_to_file(&item, path) {
-                // errors.push(e);
-                // }
-                println!("From {} : {}", new_feed.get_source_feed(), path.display());
-            });
+            }
 
             // TODO: handle errors
             if let Err(e) = RssScheduler::store_feed_to_database(new_feed, storage) {
