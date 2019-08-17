@@ -59,8 +59,14 @@ fn import_source_feeds(input_file_name: &str, storage: &RssStorage) {
         .expect("unable to read provided file");
     let source_feeds: Vec<SourceFeed> =
         serde_json::from_str(&json_content).expect("unable to parse json");
+    let existing_feeds = storage
+        .get_source_feeds()
+        .expect("unable to get source feeds from storage");
 
     for sfeed in source_feeds {
+        if let Some(_) = existing_feeds.get(&sfeed.url) {
+            continue;
+        }
         if let Err(e) = storage.add_source_feed(sfeed) {
             println!("Error storing source feed to storage : {}", e);
         }
