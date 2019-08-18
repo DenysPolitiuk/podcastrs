@@ -1,4 +1,5 @@
 #![feature(proc_macro_hygiene, decl_macro)]
+use rocket::http::uri::Uri;
 use rocket::Rocket;
 use rocket::State;
 use rocket::{get, post, routes};
@@ -67,7 +68,10 @@ fn get_rss_feeds_by_url(
     storage: State<Arc<Storage>>,
     url: String,
 ) -> Result<Json<Vec<RssFeed>>, Box<dyn Error>> {
-    Ok(Json(storage.get_rss_feeds_by_url(url.as_str())?))
+    let decoded_url = Uri::percent_decode(url.as_bytes())?;
+    Ok(Json(
+        storage.get_rss_feeds_by_url(decoded_url.to_string().as_str())?,
+    ))
 }
 
 fn make_rocket(database_client: Arc<Storage>) -> Rocket {
