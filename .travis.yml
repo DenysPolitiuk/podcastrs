@@ -10,6 +10,9 @@ script:
 services:
         - mongodb
 deploy:
+        on:
+                all_branches: true
+                condition: $TRAVIS_BRANCH =~ ^(dev|master)$
         provider: s3
         access_key_id: AKIAJ6EQYJV56BLQL37A
         bucket: podcastrs-deploy
