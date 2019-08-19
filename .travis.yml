@@ -1,22 +1,20 @@
----
 language: rust
 rust:
-        - nightly
+- nightly
 cache: cargo
 script:
-        - cargo build --verbose --all
-        - cargo test --verbose --all
-        - cargo test --verbose --all -- --ignored
+- cargo build --verbose --all
+- cargo test --verbose --all
+- cargo test --verbose --all -- --ignored
 services:
-        - mongodb
+- mongodb
 deploy:
-        on:
-                all_branches: true
-                condition: "$TRAVIS_BRANCH =~ ^(dev|master)$"
-        provider: s3
-        access_key_id: AKIA2CLQD4VJLSGGLL4Q
-        bucket: podcastrs-deploy
-        skip_cleanup: true
-        region: ca-central-1
-        secret_access_key:
-                secure: M57iyEreePhU2La7r2qOhduRgKS1l0Bi03IsOhuxmfoUPOnlt+Pzd/tSuFDUfXSCNKUYAzPkYzsHT3LFHq/bV8ACng6PZvbGXdmGP13bpEvHD3Rw2+YImDq46DQmQ1OrdQGRY2visU/zEoFH16Nw2ph2kdDRFe/j8KUb8wPME7kPFcLvMM5B9AlwnYSox6/eJA5WZDVHmA6jj8GxqzfFJF5B4t+xbueZt6CaCRMWn2Les/JXDH+lVJl0/c1KNPrqzr+YDvgl4vW3jpzq7/sEN6d1DtV+WSyy3KorkmzdtJTSmAgNqTjvYIZs+cCKwET3OwS2x235G8M45GEGaTpe7eHuOrV15ta/hNypSvHyhRdcyER3Lzc2ojCw3Ixj8lnIQUwBw3+S++qfU/O2G/DpH+Skl8kE+YX4KtNKERqZd13a+AtmijRLSLkss68OLq0Rr8tzArhWAH2aGuT+p4cH/E9eV/EsybMe60XsCfseDOl6g7TAnH46DlNmlO74U/LNfdwsvbWaCiOHsJFrB8k9Ss9SeyH9+En4/EcnQiOxQNEfK1W1wC8uW+WC1CgqgRAcKn4GToBwq1FQkAbOUQtmcnlixp5YLCHxqM7r3dv0z0ZBoGhvcHz41p/Qp+15ks4JFAim42ispxUUIYKV9cYyabSyjaouqLgeZPB42gEdIYY=
+  provider: s3
+  access_key_id: AKIA2CLQD4VJLSGGLL4Q
+  secret_access_key:
+    secure: ZfGoauZr+CedH/XsuXDHvgVaC2T71cam0y9cGn5OdWQthjBgMAWzd9/V/WAFfjrnE6R8pa7+F6qoaeZNgAGqWgRB7mNEZ8h1k6eoS6OA/v03v+Mr9CcUOnqqFVbIi2jdYtKw1n4wf/a7mjnnnNxTiRxq6xbW7Z5WcPQChNWXx4xwjMtBEOLcJ99pubYW5REUjPdqk2SGK1/X+V401bKTW+Q+ooFdenDax7ZE5Phx5uXPorP9/8rF1CAbNQU26bmfhqqUghdmkr6MPeUUX+qrFuSvnhA/yL+5tmiAQA8lUMlECrI7VcihghKgCUjavlEXpQt3dsqq4OWGozAY9gMm24GhjiyYKv63j2XYrHki/HCKZkouw8kwcuvDDYWEDQalFDXfd3q8ru0jCpxqPCMg4xfUnTAcV1sQm8IK9KagYe5JQuZTfHph0Ht8tACr3PqwPkQTEifp7+YzMUCqFXJReCMggayf7c4l6B0NTgEharmhpuDKpn+j6pJzBGmnmDomvjEcEEi2nDn3ARCEt3EzL+mHdodTB82CK+eX14LT53a+ENrFuUVjkBXiIQKr8NrZmF0ArcTOqmbCrGozQNpjaxp+Jecvg8uSbFDMKXM+I9QMnaUpLaHltMXB3ibQ/u7nXNVOXE9yCMcKJgB8ThOLocIGb2rb38JelQGimfLrbck=
+  bucket: podcastrs-deploy
+  acl: ''
+  on:
+    repo: DenysPolitiuk/podcastrs
+    branch: dev
