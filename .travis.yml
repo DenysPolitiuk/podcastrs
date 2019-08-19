@@ -12,10 +12,10 @@ services:
 deploy:
         on:
                 all_branches: true
-                condition: $TRAVIS_BRANCH =~ ^(dev|master)$
+                condition: "$TRAVIS_BRANCH =~ ^(dev|master)$"
         provider: s3
-        access_key_id: AKIAJ6EQYJV56BLQL37A
-        bucket: podcastrs-deploy
+        access_key_id: "AKIA2CLQD4VJLSGGLL4Q"
+        bucket: "podcastrs-deploy"
         skip_cleanup: true
         secret_access_key:
-                secure: uKl5wgv+HAHB+X0dPhps+imJy524WKI7Z1NySVdLss6PM1+GFt7ysdcCZV+GDhHZdAwuSxVRFaKDDL6TbWhlvARq5/oinIv3XY8AVzF5UufML4njCIJV/kjz/XcbxEaGOh08/qGk+1zYXKq0dMcHVcq8vexwl8yiM2G9Kdk/Nq2oRyM7rdj2fA3XOm0uGWKdtuYW6u//MSX97/MKZ3j/37XiwTWi1XCsjQITZuV6BXECYdW5wAGJrxKVMPC47IR9aojsLMtYx3AS2Hkio+hQvNdN7Act5XBC+H+KeKfTodQKtgh8JFJaWwv/DHSykbMgc4vJkUlFR+9GIYLLJH4/pq5JQNB4wzVp0r4zG5F2GnEbH+8HlWLXNfUZ/lfwq7/UcMAgCTCjPxCO1BYS8GBp9gmDuoKu139QkYXPsAAudp/4u5sG/ZiQq0nvD32L2BmeW8P2j4vTaFeoI/j3j46kNh1Z+cCoXYGTkyLZef93mh6nyo4OxZBMLcWFc0FHgTpLrgih7hMTEGY2DXH7efs5OBdQNWlprFikdpXP1s7dfpuGEoGIQvF5n5M4mLIliSn+MTfZMS19vmZjE90iMEblHY7VeRfEPnI1yfQ/oPl9PPtgaY5d+h6XQJdwM6B2OqOAZjlhBWmFUXKRct4+EeQQTL02PMM05Zrz4UpO/XaMapg=
+                secure: "ySV1wa2I/sY2FvdD9Tb4mf7OtlOEPYIVZwT+3m5D3Oy/2Pft1yIZZT1vUQpifX2oeFyMCPPKjLcWFRgEKsuwvWmrsomI5QRyXPm5wM22VPPApzHgB+z3CJcZY0fI5dx+JsauK6BWlsQgryN0KNMKnfFL++PXhfiZNOoaWUmuzJqz3lA7FaTdEPdItEwQdG0k3S8PR2ZLbFkXrCb43l1bbMfyAdnEFIgwmwj5fTrc/rqwpYddgoV3MTV6E4kXG1l8q+ZdGDEB4iLv78shUCaGTIvNgpYSjRsCAkXNEQCE8q8H3cteXBqQ6RT1DpKRZBKIl5EdFz6mu2ue9NNko30y8Bcrkqr36/wzmy2nq6Wa0GTMuod56XMGT6QCB7Zrgz11dB7xDS42qtkQcYL3je7A/rLDJg/1VZQuWyhrwap7EGIiHi95DwC/mmZoMivzJnntoOyrh17uurB7D6sKc5qHH8eXtg9zMNPOvbJK6XnWG4KnT49OTUMfzBGMdhAOMSbtPPl9cgnDlvaVoVLNO9rIGIjQ2kGOPseSok6sdNKMjdxKAFJSpntTZA2R+MTkS2hnNILoqldQ4ZL3eZnZYZuCmCtRyk8QikdqEcqdxSaojIMzoXG2McsCBGVZYrQQl8N2Gmi0ny+Fq7B4PXJ9OHo331RDvR2jmukZIHYRuZqDRv0="
