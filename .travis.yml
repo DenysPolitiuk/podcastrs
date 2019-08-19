@@ -3,10 +3,9 @@ rust:
 - nightly
 cache: cargo
 script:
-- cargo build --verbose --all
-- cargo test --verbose --all
-- cargo test --verbose --all -- --ignored
 - cargo build --release --verbose --all
+- cargo test --release --verbose --all
+- cargo test --release --verbose --all -- --ignored
 services:
 - mongodb
 before_deploy:
