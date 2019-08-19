@@ -5,5 +5,7 @@ rust:
 cache: cargo
 script:
         - cargo build --verbose --all
-        - cargo test --verbose --all --exclude storage
-        - cargo test --verbose --all --exclude storage -- --ignored
+        - cargo test --verbose --all
+        - cargo test --verbose --all -- --ignored
+services:
+        - mongodb
