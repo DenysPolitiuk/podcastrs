@@ -9,3 +9,10 @@ script:
         - cargo test --verbose --all -- --ignored
 services:
         - mongodb
+deploy:
+        provider: s3
+        access_key_id: AKIAJ6EQYJV56BLQL37A
+        bucket: podcastrs-deploy
+        skip_cleanup: true
+        secret_access_key:
+                secure: uKl5wgv+HAHB+X0dPhps+imJy524WKI7Z1NySVdLss6PM1+GFt7ysdcCZV+GDhHZdAwuSxVRFaKDDL6TbWhlvARq5/oinIv3XY8AVzF5UufML4njCIJV/kjz/XcbxEaGOh08/qGk+1zYXKq0dMcHVcq8vexwl8yiM2G9Kdk/Nq2oRyM7rdj2fA3XOm0uGWKdtuYW6u//MSX97/MKZ3j/37XiwTWi1XCsjQITZuV6BXECYdW5wAGJrxKVMPC47IR9aojsLMtYx3AS2Hkio+hQvNdN7Act5XBC+H+KeKfTodQKtgh8JFJaWwv/DHSykbMgc4vJkUlFR+9GIYLLJH4/pq5JQNB4wzVp0r4zG5F2GnEbH+8HlWLXNfUZ/lfwq7/UcMAgCTCjPxCO1BYS8GBp9gmDuoKu139QkYXPsAAudp/4u5sG/ZiQq0nvD32L2BmeW8P2j4vTaFeoI/j3j46kNh1Z+cCoXYGTkyLZef93mh6nyo4OxZBMLcWFc0FHgTpLrgih7hMTEGY2DXH7efs5OBdQNWlprFikdpXP1s7dfpuGEoGIQvF5n5M4mLIliSn+MTfZMS19vmZjE90iMEblHY7VeRfEPnI1yfQ/oPl9PPtgaY5d+h6XQJdwM6B2OqOAZjlhBWmFUXKRct4+EeQQTL02PMM05Zrz4UpO/XaMapg=
