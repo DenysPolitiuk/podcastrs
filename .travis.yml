@@ -10,9 +10,8 @@ services:
 - mongodb
 deploy:
   provider: s3
-  access_key_id: AKIA2CLQD4VJLSGGLL4Q
-  secret_access_key:
-    secure: hfifsYTxtEe9AG9+9AwKXBhGSKGHjZ6nS8lOia1P6lVGXMU+ZO13HhyHy7NWs/ML1PrHKNppIFM0ILbG5HtxmjWILzSRmRsd0CdDt1mtH2ngbpcHsO3LKndb6ctC4Sdkb3yswkugmggaxIUwIdP2gQCtQTVU9yzcu/v0v2JkwjEht8BCTvXfmds/lAaEmXX/3Tb/O3GlepBC7L5kW4xKWK5bqMdzuO9shx8Tw6eW0Gnr5lNaM3Ob+3nZcjbU1c8HOIK7CZIXCIb99647ZaIzOx6umCgVGQvnnZjjQUymvQcNhWb6us0PCU05w7GoPkrFfh5VvOdHffRdSrYDNeqlP3MONR5ClfaKwyk9yP3aWd+ryimxJYEKGb67Te+IsZxIYkRSeVkS9IFafLqInbGHNhYr0fZ8M7XRFTcd27kkabU/2wCvCKZB17NRlyFTixwBTiKMeETHr/Gf5RKk+o67Q5eG+vbfT7mSs4bYOGSDvbWFiHmcA/GDS9RDkV78hJA7JB99em0wPlRzO7o4RdPE6L5V1I80/rE1aF/pu3bwitlstW0YQgXaumxGqZCTVXXGZ5ZuZUvbCzcvcLyAMrUm34YTR/KRnhaVv/cuCf8aqw6rHd/e1VJnaFsLdVJjvSMqKZr/4osa6OqBeb6tkpgNZKeSzn3OJD4tAEzakgIXHQc=
+  access_key_id: $AWS_ACCESS_KEY_ID
+  secret_access_key: $AWS_SECRET_ACCESS_KEY
   bucket: podcastrs-deploy
   acl: public_read
   region: ca-central-1
