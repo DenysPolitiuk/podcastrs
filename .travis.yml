@@ -10,7 +10,7 @@ script:
 services:
 - mongodb
 before_deploy:
-  script: bash dev-scripts/deploy.sh
+  - bash dev-scripts/deploy.sh
 deploy:
   provider: s3
   access_key_id: $AWS_ACCESS_KEY_ID
@@ -19,6 +19,7 @@ deploy:
   acl: public_read
   region: ca-central-1
   local_dir: deployment
+  skip_cleanup: true
   on:
     repo: DenysPolitiuk/podcastrs
     branch: dev
