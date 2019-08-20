@@ -22,6 +22,11 @@ static PORT_ENV_VAR: &str = "RSS_DATABASE_PORT";
 
 type Storage = dyn PodRocketStorage + Send + Sync;
 
+#[get("/ping")]
+fn ping_pong() -> &'static str {
+    "pong"
+}
+
 #[get("/source")]
 fn get_all_source_feeds(
     storage: State<Arc<Storage>>,
@@ -78,6 +83,7 @@ fn make_rocket(database_client: Arc<Storage>) -> Rocket {
     rocket::ignite().manage(database_client).mount(
         "/",
         routes![
+            ping_pong,
             get_all_source_feeds,
             get_source_feed,
             post_source_feed,
@@ -194,6 +200,20 @@ mod tests {
 
             Ok(())
         }
+    }
+
+    #[test]
+    fn verify_ping_pong() {
+        let storage = PodRocketStorageTest::new();
+
+        let rocket = make_rocket(Arc::new(storage));
+        let client = Client::new(rocket).expect("not a valid rocket instance");
+        let mut res = client.get("/ping").dispatch();
+
+        assert_eq!(res.status(), Status::Ok);
+
+        let res_body = res.body_string().unwrap();
+        assert_eq!("pong".to_string(), res_body);
     }
 
     #[test]
