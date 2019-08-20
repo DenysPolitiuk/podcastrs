@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+        podrocket:
+                container_name: podrocket
+                restart: always
+                build: ./podrocket
+                ports:
+                        - "8000:8000"
