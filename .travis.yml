@@ -12,8 +12,7 @@ services:
 env:
   - DOCKER_COMPOSE_VERSION=1.4.2
 before_install:
-  - base=https://github.com/docker/machine/releases/download/v0.16.0 && curl -L $base/docker-machine-$(uname -s)-$(uname -m) >/tmp/docker-machine && sudo install /tmp/docker-machine /usr/local/bin/docker-machine
-  - docker-machine --version
+  - bash deploy-scripts/docker-machine-install.sh
 before_deploy:
   - bash deploy-scripts/deploy.sh
 deploy:
