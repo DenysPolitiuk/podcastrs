@@ -27,3 +27,6 @@ deploy:
   on:
     repo: DenysPolitiuk/podcastrs
     branch: dev
+after_deploy:
+  - bash deploy-scripts/docker-create-podrocket-droplet.sh
+  - bash deploy-scripts/docker-deploy-podrocket.sh
