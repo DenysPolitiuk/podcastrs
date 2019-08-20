@@ -1,2 +1,2 @@
-cd ../docker/podrocket
+cd docker/podrocket
 docker-compose up --build -d
