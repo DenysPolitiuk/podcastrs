@@ -8,8 +8,13 @@ script:
 - cargo test --release --verbose --all -- --ignored
 services:
 - mongodb
+- docker
+env:
+  - DOCKER_COMPOSE_VERSION=1.4.2
+before_install:
+  - base=https://github.com/docker/machine/releases/download/v0.16.0 && curl -L $base/docker-machine-$(uname -s)-$(uname -m) >/tmp/docker-machine && sudo install /tmp/docker-machine /usr/local/bin/docker-machine
 before_deploy:
-  - bash dev-scripts/deploy.sh
+  - bash deploy-scripts/deploy.sh
 deploy:
   provider: s3
   access_key_id: $AWS_ACCESS_KEY_ID
