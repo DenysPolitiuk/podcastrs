@@ -1,7 +1,6 @@
 FROM alpine
 
-RUN apk update \
-	&& apk add bash
+RUN apk update
 
 COPY ./podrocket /podrocket
 
