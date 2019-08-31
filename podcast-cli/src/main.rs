@@ -38,6 +38,12 @@ fn main() {
     let matches = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .arg(
+            Arg::with_name("add-source-one")
+                .short("s")
+                .long("add-source-one")
+                .help("add one source feed interactively"),
+        )
+        .arg(
             Arg::with_name("add-source")
                 .short("S")
                 .long("add-source")
@@ -49,7 +55,13 @@ fn main() {
     if let Some(file_name) = matches.value_of("add-source") {
         import_source_feeds(file_name, &storage);
     }
+
+    if matches.is_present("add-source-one") {
+        add_new_source_feed(&storage);
+    }
 }
+
+fn add_new_source_feed(storage: &RssStorage) {}
 
 fn import_source_feeds(input_file_name: &str, storage: &RssStorage) {
     let mut json_content = String::new();
