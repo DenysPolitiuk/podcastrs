@@ -1,4 +1,5 @@
 use common::SourceFeed;
+use scheduler_trait::RssSchedulerStorage;
 use storage::RssStorage;
 
 use clap::{App, Arg};
@@ -61,9 +62,9 @@ fn main() {
     }
 }
 
-fn add_new_source_feed(storage: &RssStorage) {}
+fn add_new_source_feed(storage: &dyn RssSchedulerStorage) {}
 
-fn import_source_feeds(input_file_name: &str, storage: &RssStorage) {
+fn import_source_feeds(input_file_name: &str, storage: &dyn RssSchedulerStorage) {
     let mut json_content = String::new();
     let mut f = File::open(input_file_name).expect("unable to open provided file");
 
