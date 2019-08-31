@@ -7,6 +7,7 @@ use serde_json;
 
 use std::env;
 use std::fs::File;
+use std::io;
 use std::io::prelude::*;
 
 static DEFAULT_HOST: &str = "localhost";
@@ -62,7 +63,27 @@ fn main() {
     }
 }
 
-fn add_new_source_feed(storage: &dyn RssSchedulerStorage) {}
+fn add_new_source_feed(storage: &dyn RssSchedulerStorage) {
+    println!("Please enter source feed url:");
+    let mut url = String::new();
+    io::stdin()
+        .read_line(&mut url)
+        .expect("Failed to read line from stdin");
+    let url = url.trim();
+
+    println!("Please enter title:");
+    let mut title = String::new();
+    io::stdin()
+        .read_line(&mut title)
+        .expect("Failed to read line from stdin");
+    let title = title.trim();
+
+    let source_feed = SourceFeed::new(url, title);
+
+    if let Err(e) = storage.add_source_feed(source_feed) {
+        println!("Error during adding source feed to storage : {}", e);
+    }
+}
 
 fn import_source_feeds(input_file_name: &str, storage: &dyn RssSchedulerStorage) {
     let mut json_content = String::new();
