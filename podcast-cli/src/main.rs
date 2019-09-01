@@ -7,7 +7,6 @@ use serde_json;
 
 use std::env;
 use std::fs::File;
-use std::io;
 use std::io::prelude::*;
 
 static DEFAULT_HOST: &str = "localhost";
@@ -46,6 +45,16 @@ fn main() {
                 .help("add one source feed interactively"),
         )
         .arg(
+            Arg::with_name("source-feed-title")
+                .long("add-source-one-title")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("source-feed-url")
+                .long("add-source-one-url")
+                .takes_value(true),
+        )
+        .arg(
             Arg::with_name("add-source")
                 .short("S")
                 .long("add-source")
@@ -59,25 +68,17 @@ fn main() {
     }
 
     if matches.is_present("add-source-one") {
-        add_new_source_feed(&storage);
+        let url = matches
+            .value_of("source-feed-url")
+            .expect("no url provided when adding source feed");
+        let title = matches
+            .value_of("source-feed-title")
+            .expect("no title provided when adding source feed");
+        add_new_source_feed(&storage, url, title);
     }
 }
 
-fn add_new_source_feed(storage: &dyn RssSchedulerStorage) {
-    println!("Please enter source feed url:");
-    let mut url = String::new();
-    io::stdin()
-        .read_line(&mut url)
-        .expect("Failed to read line from stdin");
-    let url = url.trim();
-
-    println!("Please enter title:");
-    let mut title = String::new();
-    io::stdin()
-        .read_line(&mut title)
-        .expect("Failed to read line from stdin");
-    let title = title.trim();
-
+fn add_new_source_feed(storage: &dyn RssSchedulerStorage, url: &str, title: &str) {
     let source_feed = SourceFeed::new(url, title);
 
     if let Err(e) = storage.add_source_feed(source_feed) {
