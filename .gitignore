@@ -1,3 +1,7 @@
 /target
 **/*.rs.bk
 Cargo.lock
+deployment/
+download/
+*.vim
+node_modules/
