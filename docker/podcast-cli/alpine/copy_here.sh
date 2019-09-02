@@ -1,0 +1,2 @@
+cp ../../../target/x86_64-unknown-linux-musl/release/podcast-cli .
+strip podcast-cli
