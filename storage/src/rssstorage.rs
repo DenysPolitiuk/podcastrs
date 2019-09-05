@@ -266,6 +266,47 @@ impl PodRocketStorage for RssStorage {
         Ok(results)
     }
 
+    fn get_rss_feeds_latest(&self) -> Result<HashMap<String, RssFeed>, Box<dyn Error>> {
+        let source_feeds = self.get_source_feeds()?;
+        if source_feeds.is_empty() {
+            return Ok(HashMap::new());
+        }
+
+        let collection = self
+            .client
+            .db(&self.config.database)
+            .collection(&self.config.database_rss_feed_collection);
+
+        let mut result_feeds = HashMap::new();
+
+        for source_feed in source_feeds.values() {
+            let find_doc = doc! {
+                SOURCE_URL_FIELD: source_feed.url.clone(),
+            };
+            let find_sort_doc = doc! {
+                TIMESTAMP_FIELD: -1,
+            };
+
+            let mut find_options = mongodb::coll::options::FindOptions::new();
+            find_options.limit = Some(1);
+            find_options.sort = Some(find_sort_doc);
+
+            let result = collection.find_one(Some(find_doc), Some(find_options))?;
+
+            let doc = match result {
+                None => continue,
+                Some(v) => v,
+            };
+
+            let son = doc.get(DATA_FIELD).unwrap();
+            let feed_json: String = bson::from_bson(son.clone())?;
+            let feed: RssFeed = serde_json::from_str(&feed_json)?;
+            result_feeds.insert(source_feed.url.clone(), feed);
+        }
+
+        Ok(result_feeds)
+    }
+
     fn get_rss_feed_by_id(&self, id: &str) -> Result<Option<RssFeed>, Box<dyn Error>> {
         let collection = self
             .client
@@ -785,6 +826,68 @@ mod tests {
         assert_eq!(feeds.len(), 2);
         assert_eq!(feeds.get(SOURCE2).unwrap().len(), 2);
         assert_eq!(feeds.get(SOURCE2).unwrap()[1].get_hash(), feed2_hash);
+
+        coll.drop().unwrap();
+    }
+
+    #[test]
+    fn verify_get_rss_feeds_latest() {
+        let mut storage = RssStorage::new(DEFAULT_HOST, DEFAULT_PORT).unwrap();
+        storage.config = get_test_database_config();
+        storage.config.database_rss_feed_collection = format!(
+            "{},{}",
+            storage.config.database_rss_feed_collection, "verify_get_rss_feeds_latest"
+        );
+
+        let client = Client::connect(DEFAULT_HOST, DEFAULT_PORT)
+            .expect("Failed to initialize standalone client");
+        let coll = client
+            .db(&storage.config.database)
+            .collection(&storage.config.database_rss_feed_collection);
+
+        coll.drop().unwrap();
+
+        let source_feed1 = SourceFeed::new(SOURCE1, "");
+        let source_feed2 = SourceFeed::new(SOURCE2, "");
+        let source_feed3 = SourceFeed::new(SOURCE3, "");
+
+        RssStorage::add_source_feed(&storage, source_feed1).unwrap();
+        RssStorage::add_source_feed(&storage, source_feed2).unwrap();
+        RssStorage::add_source_feed(&storage, source_feed3).unwrap();
+
+        let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
+        let feed1_hash = feed1.get_hash().to_string();
+        let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
+        let feed2_hash = feed2.get_hash().to_string();
+        let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
+        let feed3_hash = feed3.get_hash().to_string();
+        let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
+        let feed4_hash = feed4.get_hash().to_string();
+
+        assert!(storage.get_rss_feeds().unwrap().is_empty());
+
+        RssStorage::add_new_rss_feed(&storage, feed1.clone()).unwrap();
+        let feeds = storage.get_rss_feeds_latest().unwrap();
+        assert_eq!(feeds.len(), 1);
+        assert_eq!(feeds.get(SOURCE1).unwrap().get_hash(), feed1_hash);
+
+        RssStorage::add_new_rss_feed(&storage, feed4.clone()).unwrap();
+        let feeds = storage.get_rss_feeds_latest().unwrap();
+        assert_eq!(feeds.len(), 2);
+        assert_eq!(feeds.get(SOURCE1).unwrap().get_hash(), feed1_hash);
+        assert_eq!(feeds.get(SOURCE2).unwrap().get_hash(), feed4_hash);
+
+        RssStorage::add_new_rss_feed(&storage, feed3.clone()).unwrap();
+        let feeds = storage.get_rss_feeds_latest().unwrap();
+        assert_eq!(feeds.len(), 2);
+        assert_eq!(feeds.get(SOURCE1).unwrap().get_hash(), feed3_hash);
+        assert_eq!(feeds.get(SOURCE2).unwrap().get_hash(), feed4_hash);
+
+        RssStorage::add_new_rss_feed(&storage, feed2.clone()).unwrap();
+        let feeds = storage.get_rss_feeds_latest().unwrap();
+        assert_eq!(feeds.len(), 2);
+        assert_eq!(feeds.get(SOURCE1).unwrap().get_hash(), feed3_hash);
+        assert_eq!(feeds.get(SOURCE2).unwrap().get_hash(), feed2_hash);
 
         coll.drop().unwrap();
     }
