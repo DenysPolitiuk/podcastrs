@@ -64,8 +64,8 @@ fn post_source_feed(
 #[get("/rss")]
 fn get_all_rss(
     storage: State<Arc<Storage>>,
-) -> Result<Json<HashMap<String, Vec<RssFeed>>>, Box<dyn Error>> {
-    Ok(Json(storage.get_rss_feeds()?))
+) -> Result<Json<HashMap<String, RssFeed>>, Box<dyn Error>> {
+    Ok(Json(storage.get_rss_feeds_latest()?))
 }
 
 #[get("/rss/<id>")]
@@ -161,6 +161,25 @@ mod tests {
     impl PodRocketStorage for PodRocketStorageTest {
         fn get_rss_feeds(&self) -> Result<HashMap<String, Vec<RssFeed>>, Box<dyn Error>> {
             Ok(self.rss_feeds.lock().unwrap().clone())
+        }
+
+        fn get_rss_feeds_latest(&self) -> Result<HashMap<String, RssFeed>, Box<dyn Error>> {
+            let mut result = HashMap::new();
+
+            for source_feed in self.source_feeds.lock().unwrap().values() {
+                let mut feeds = match self.rss_feeds.lock().unwrap().get(&source_feed.url) {
+                    Some(v) => v,
+                    None => continue,
+                }
+                .clone();
+                if feeds.is_empty() {
+                    continue;
+                }
+                let feed = feeds.pop().unwrap();
+                result.insert(source_feed.url.clone(), feed);
+            }
+
+            Ok(result)
         }
 
         fn get_rss_feed_by_id(&self, id: &str) -> Result<Option<RssFeed>, Box<dyn Error>> {
@@ -593,15 +612,6 @@ mod tests {
         assert_eq!(found_items, feed4.get_items().len());
     }
 
-    fn contains_hash(vector_to_check: &Vec<RssFeed>, hash: String) -> bool {
-        for feed in vector_to_check {
-            if feed.get_hash() == hash {
-                return true;
-            }
-        }
-        false
-    }
-
     #[test]
     fn verify_get_all_rss() {
         let storage = Arc::new(PodRocketStorageTest::new());
@@ -614,6 +624,14 @@ mod tests {
         let feed3_hash = feed3.get_hash().to_string();
         let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
         let feed4_hash = feed4.get_hash().to_string();
+
+        let source1 = SourceFeed::new(SOURCE1, "");
+        let source2 = SourceFeed::new(SOURCE2, "");
+        let source3 = SourceFeed::new(SOURCE3, "");
+
+        storage.add_source_feed(source1).unwrap();
+        storage.add_source_feed(source2).unwrap();
+        storage.add_source_feed(source3).unwrap();
 
         let rocket = make_rocket(storage.clone());
         let client = Client::new(rocket).expect("not a valid rocket instance");
@@ -629,67 +647,36 @@ mod tests {
         let mut res = client.get(format!("{}", RSS_FEED_URL)).dispatch();
         assert_eq!(res.status(), Status::Ok);
         let res_body = res.body_string().unwrap();
-        let feeds: HashMap<String, Vec<RssFeed>> = serde_json::from_str(&res_body).unwrap();
-        assert_eq!(feeds.get(SOURCE1).unwrap().len(), 1);
+        let feeds: HashMap<String, RssFeed> = serde_json::from_str(&res_body).unwrap();
+        assert!(feeds.get(SOURCE1).is_some());
+        assert_eq!(feeds.get(SOURCE1).unwrap().get_hash(), feed1_hash.clone());
         assert!(feeds.get(SOURCE2).is_none());
-        let mut found_feeds = vec![];
-        for values in feeds.values() {
-            for a_found_feed in values {
-                found_feeds.push(a_found_feed.clone());
-            }
-        }
-        assert_eq!(found_feeds.len(), 1);
-        assert!(contains_hash(&found_feeds, feed1_hash));
 
         storage.add_new_rss_feed(feed2.clone()).unwrap();
 
         let mut res = client.get(format!("{}", RSS_FEED_URL)).dispatch();
         assert_eq!(res.status(), Status::Ok);
         let res_body = res.body_string().unwrap();
-        let feeds: HashMap<String, Vec<RssFeed>> = serde_json::from_str(&res_body).unwrap();
-        assert_eq!(feeds.get(SOURCE1).unwrap().len(), 1);
-        assert_eq!(feeds.get(SOURCE2).unwrap().len(), 1);
-        let mut found_feeds = vec![];
-        for values in feeds.values() {
-            for a_found_feed in values {
-                found_feeds.push(a_found_feed.clone());
-            }
-        }
-        assert_eq!(found_feeds.len(), 2);
-        assert!(contains_hash(&found_feeds, feed2_hash));
+        let feeds: HashMap<String, RssFeed> = serde_json::from_str(&res_body).unwrap();
+        assert_eq!(feeds.get(SOURCE1).unwrap().get_hash(), feed1_hash.clone());
+        assert_eq!(feeds.get(SOURCE2).unwrap().get_hash(), feed2_hash.clone());
 
         storage.add_new_rss_feed(feed3.clone()).unwrap();
 
         let mut res = client.get(format!("{}", RSS_FEED_URL)).dispatch();
         assert_eq!(res.status(), Status::Ok);
         let res_body = res.body_string().unwrap();
-        let feeds: HashMap<String, Vec<RssFeed>> = serde_json::from_str(&res_body).unwrap();
-        assert_eq!(feeds.get(SOURCE1).unwrap().len(), 2);
-        assert_eq!(feeds.get(SOURCE2).unwrap().len(), 1);
-        let mut found_feeds = vec![];
-        for values in feeds.values() {
-            for a_found_feed in values {
-                found_feeds.push(a_found_feed.clone());
-            }
-        }
-        assert_eq!(found_feeds.len(), 3);
-        assert!(contains_hash(&found_feeds, feed3_hash));
+        let feeds: HashMap<String, RssFeed> = serde_json::from_str(&res_body).unwrap();
+        assert_eq!(feeds.get(SOURCE1).unwrap().get_hash(), feed3_hash.clone());
+        assert_eq!(feeds.get(SOURCE2).unwrap().get_hash(), feed2_hash.clone());
 
         storage.add_new_rss_feed(feed4.clone()).unwrap();
 
         let mut res = client.get(format!("{}", RSS_FEED_URL)).dispatch();
         assert_eq!(res.status(), Status::Ok);
         let res_body = res.body_string().unwrap();
-        let feeds: HashMap<String, Vec<RssFeed>> = serde_json::from_str(&res_body).unwrap();
-        assert_eq!(feeds.get(SOURCE1).unwrap().len(), 2);
-        assert_eq!(feeds.get(SOURCE2).unwrap().len(), 2);
-        let mut found_feeds = vec![];
-        for values in feeds.values() {
-            for a_found_feed in values {
-                found_feeds.push(a_found_feed.clone());
-            }
-        }
-        assert_eq!(found_feeds.len(), 4);
-        assert!(contains_hash(&found_feeds, feed4_hash));
+        let feeds: HashMap<String, RssFeed> = serde_json::from_str(&res_body).unwrap();
+        assert_eq!(feeds.get(SOURCE1).unwrap().get_hash(), feed3_hash.clone());
+        assert_eq!(feeds.get(SOURCE2).unwrap().get_hash(), feed4_hash.clone());
     }
 }
