@@ -79,7 +79,13 @@ fn main() {
 }
 
 fn add_new_source_feed(storage: &dyn RssSchedulerStorage, url: &str, title: &str) {
-    let source_feed = SourceFeed::new(url, title);
+    let source_feed = match SourceFeed::new(url, title) {
+        Ok(v) => v,
+        Err(e) => {
+            println!("Error creating source feed : {}", e);
+            return;
+        }
+    };
 
     if let Err(e) = storage.add_source_feed(source_feed) {
         println!("Error during adding source feed to storage : {}", e);

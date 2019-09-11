@@ -26,13 +26,17 @@ impl RssScheduler {
         }
     }
 
-    pub fn add_source_feed(&mut self, source_feed_url: &str, source_feed_title: &str) -> bool {
+    pub fn add_source_feed(
+        &mut self,
+        source_feed_url: &str,
+        source_feed_title: &str,
+    ) -> Result<bool, Box<dyn Error>> {
         let url = source_feed_url.to_string();
         match self.source_feeds.entry(url) {
-            Entry::Occupied(_) => false,
+            Entry::Occupied(_) => Ok(false),
             Entry::Vacant(v) => {
-                v.insert(SourceFeed::new(source_feed_url, source_feed_title));
-                true
+                v.insert(SourceFeed::new(source_feed_url, source_feed_title)?);
+                Ok(true)
             }
         }
     }
