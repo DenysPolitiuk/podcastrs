@@ -248,9 +248,9 @@ mod tests {
     fn verify_get_all_source_feeds() {
         let storage = PodRocketStorageTest::new();
 
-        let source1 = SourceFeed::new(SOURCE1, "");
-        let source2 = SourceFeed::new(SOURCE2, "");
-        let source3 = SourceFeed::new(SOURCE3, "");
+        let source1 = SourceFeed::new(SOURCE1, "").unwrap();
+        let source2 = SourceFeed::new(SOURCE2, "").unwrap();
+        let source3 = SourceFeed::new(SOURCE3, "").unwrap();
 
         let original_source_feeds = vec![source1.clone(), source2.clone(), source3.clone()];
 
@@ -288,9 +288,9 @@ mod tests {
     fn verify_get_source_feed() {
         let storage = Arc::new(PodRocketStorageTest::new());
 
-        let source1 = SourceFeed::new(SOURCE1, "");
-        let source2 = SourceFeed::new(SOURCE2, "");
-        let source3 = SourceFeed::new(SOURCE3, "");
+        let source1 = SourceFeed::new(SOURCE1, "").unwrap();
+        let source2 = SourceFeed::new(SOURCE2, "").unwrap();
+        let source3 = SourceFeed::new(SOURCE3, "").unwrap();
 
         let rocket = make_rocket(storage.clone());
         let client = Client::new(rocket).expect("not a valid rocket instance");
@@ -336,9 +336,9 @@ mod tests {
     fn verify_post_source_feed() {
         let storage = Arc::new(PodRocketStorageTest::new());
 
-        let source1 = SourceFeed::new(SOURCE1, "");
-        let source2 = SourceFeed::new(SOURCE2, "");
-        let source3 = SourceFeed::new(SOURCE3, "");
+        let source1 = SourceFeed::new(SOURCE1, "").unwrap();
+        let source2 = SourceFeed::new(SOURCE2, "").unwrap();
+        let source3 = SourceFeed::new(SOURCE3, "").unwrap();
 
         let rocket = make_rocket(storage.clone());
         let client = Client::new(rocket).expect("not a valid rocket instance");
@@ -625,9 +625,9 @@ mod tests {
         let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
         let feed4_hash = feed4.get_hash().to_string();
 
-        let source1 = SourceFeed::new(SOURCE1, "");
-        let source2 = SourceFeed::new(SOURCE2, "");
-        let source3 = SourceFeed::new(SOURCE3, "");
+        let source1 = SourceFeed::new(SOURCE1, "").unwrap();
+        let source2 = SourceFeed::new(SOURCE2, "").unwrap();
+        let source3 = SourceFeed::new(SOURCE3, "").unwrap();
 
         storage.add_source_feed(source1).unwrap();
         storage.add_source_feed(source2).unwrap();

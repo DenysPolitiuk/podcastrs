@@ -9,7 +9,8 @@ use std::error::Error;
 pub struct SourceFeed {
     pub url: String,
     title: String,
-    hash: Option<u32>,
+    // TODO: change back to u32 after using new datastore
+    hash: Option<i64>,
 }
 
 impl SourceFeed {
@@ -31,7 +32,7 @@ impl SourceFeed {
         Ok(SourceFeed {
             url: self.url.clone(),
             title: self.title.clone(),
-            hash: Some(util::compute_hash(&json)),
+            hash: Some(i64::from(util::compute_hash(&json))),
         })
     }
 
@@ -39,7 +40,7 @@ impl SourceFeed {
         self.title.clone()
     }
 
-    pub fn get_hash(&self) -> u32 {
+    pub fn get_hash(&self) -> i64 {
         match self.hash {
             Some(v) => v,
             None => self
