@@ -179,6 +179,7 @@ mod tests {
     use tempfile::NamedTempFile;
 
     static TEST_FEED: &str = "../tests/sedaily.rss";
+    static TEST_FEED_2: &str = "../tests/sedaily2.rss";
     static TEST_SOURCE_FEED_URL: &str = "test";
     static REAL_FEED_URL: &str = "https://softwareengineeringdaily.com/category/podcast/feed";
 
@@ -193,10 +194,37 @@ mod tests {
     }
 
     #[test]
-    fn create_feed_has_hash() {
+    fn generate_hash() {
         let feed = test_feed();
+        assert!(feed.hash.is_some());
+        assert!(feed.get_hash() >= 0);
+    }
 
-        assert_ne!(feed.get_hash(), 0);
+    #[test]
+    fn generate_hash_is_the_same() {
+        let feed_1 = test_feed();
+        let feed_2 = test_feed();
+        assert!(feed_1.hash.is_some());
+        assert!(feed_2.hash.is_some());
+        assert_eq!(feed_1.get_hash(), feed_2.get_hash());
+    }
+
+    #[test]
+    fn generate_different_hash() {
+        let feed_1 = test_feed();
+        let feed_2 = RssFeed::new_from_file(TEST_SOURCE_FEED_URL, TEST_FEED_2).unwrap();
+        assert!(feed_1.hash.is_some());
+        assert!(feed_2.hash.is_some());
+        assert_ne!(feed_1.get_hash(), feed_2.get_hash());
+    }
+
+    #[test]
+    fn get_hash_multiple_times_is_the_same() {
+        let feed = test_feed();
+        assert!(feed.hash.is_some());
+        let first_hash = feed.get_hash();
+        let second_hash = feed.get_hash();
+        assert_eq!(first_hash, second_hash);
     }
 
     #[test]
