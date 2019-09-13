@@ -1,74 +1,16 @@
 use reqwest;
-use rss::{Channel, Enclosure, Guid, Item};
+use rss::Channel;
 use serde::{Deserialize, Serialize};
 use serde_json;
 
+use super::MiniChannel;
+use super::MiniItem;
 use util;
 
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
-
-#[derive(Clone, Deserialize, Serialize)]
-pub struct MiniChannel {
-    title: String,
-    description: String,
-    link: String,
-    last_build_date: Option<String>,
-    items: Vec<MiniItem>,
-}
-
-impl MiniChannel {
-    pub fn from_channel(channel: &Channel) -> MiniChannel {
-        MiniChannel {
-            title: channel.title().to_string(),
-            description: channel.description().to_string(),
-            link: channel.link().to_string(),
-            last_build_date: channel.last_build_date().map(|s| s.to_string()),
-            items: channel
-                .items()
-                .iter()
-                .map(|i| MiniItem::from_item(i))
-                .collect(),
-        }
-    }
-}
-
-#[derive(Clone, Deserialize, Serialize)]
-pub struct MiniItem {
-    title: Option<String>,
-    link: Option<String>,
-    pub_date: Option<String>,
-    guid: Option<Guid>,
-    enclosure: Option<Enclosure>,
-    description: Option<String>,
-}
-
-impl MiniItem {
-    pub fn from_item(item: &Item) -> MiniItem {
-        MiniItem {
-            title: item.title().map(|s| s.to_string()),
-            link: item.link().map(|s| s.to_string()),
-            pub_date: item.pub_date().map(|s| s.to_string()),
-            guid: item.guid().cloned(),
-            enclosure: item.enclosure().cloned(),
-            description: item.description().map(|s| s.to_string()),
-        }
-    }
-
-    pub fn get_title(&self) -> Option<&str> {
-        self.title.as_ref().map(String::as_ref)
-    }
-
-    pub fn get_guid(&self) -> Option<&str> {
-        self.guid.as_ref().map(|g| &*g.value())
-    }
-
-    pub fn get_enclosure_url(&self) -> Option<&str> {
-        self.enclosure.as_ref().map(|e| &*e.url())
-    }
-}
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct RssFeed {
@@ -147,7 +89,7 @@ impl RssFeed {
     }
 
     pub fn get_items(&self) -> &[MiniItem] {
-        &self.mini_channel.items
+        &self.mini_channel.get_items()
     }
 
     pub fn save_item_to_file<P: AsRef<Path>>(
