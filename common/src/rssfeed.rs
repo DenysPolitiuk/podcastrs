@@ -1,11 +1,13 @@
 use reqwest;
 use rss::{Channel, Enclosure, Guid, Item};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha512};
+use serde_json;
+
+use util;
 
 use std::error::Error;
 use std::fs::File;
-use std::io::{BufReader, BufWriter, Read, Write};
+use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -75,7 +77,8 @@ pub struct RssFeed {
     channel: Option<Channel>,
     mini_channel: MiniChannel,
     // TODO: better datatype ?
-    hash: String,
+    // TODO: replace with u32, similar to SourceFeed
+    hash: Option<i64>,
     feed_file_location: String,
 }
 
@@ -100,20 +103,25 @@ impl RssFeed {
         let buf_reader = BufReader::new(&file);
         let channel = Channel::read_from(buf_reader)?;
 
-        let file = File::open(&file_name)?;
-        let mut buf_reader = BufReader::new(&file);
-        let mut buffer = vec![];
-        buf_reader.read_to_end(&mut buffer)?;
-        let mut hasher = Sha512::new();
-        hasher.input(&buffer);
-        let hash = hasher.result();
-
         Ok(RssFeed {
             source_feed_url: source_url.to_string(),
-            hash: format!("{:x}", hash),
+            hash: None,
             feed_file_location: String::from(file_name),
             mini_channel: MiniChannel::from_channel(&channel),
             channel: Some(channel),
+        }
+        .with_compute_hash()?)
+    }
+
+    fn with_compute_hash(self) -> Result<Self, Box<dyn Error + Send + Sync>> {
+        let json = serde_json::to_string(&self)?;
+
+        Ok(RssFeed {
+            source_feed_url: self.source_feed_url.clone(),
+            hash: Some(i64::from(util::compute_hash(&json))),
+            feed_file_location: self.feed_file_location.clone(),
+            mini_channel: self.mini_channel.clone(),
+            channel: self.channel.clone(),
         })
     }
 
@@ -121,8 +129,17 @@ impl RssFeed {
         &self.source_feed_url
     }
 
-    pub fn get_hash(&self) -> &str {
-        self.hash.as_str()
+    pub fn get_hash(&self) -> i64 {
+        match self.hash {
+            Some(v) => v,
+            // this case should not happened unless creating struct with no hash is exposed
+            None => self
+                .clone()
+                .with_compute_hash()
+                .expect("internal hashing error")
+                .hash
+                .unwrap(),
+        }
     }
 
     pub fn get_file_location(&self) -> String {
@@ -162,7 +179,6 @@ mod tests {
     use tempfile::NamedTempFile;
 
     static TEST_FEED: &str = "../tests/sedaily.rss";
-    static TEST_FEED_HASH: &str = "bbebeae954a00d0426239111a5d632b366073736abaa04e080c49b280b7622c23c0e2485e4701acf77b5b541f14a34421dfb1c905e3191b15837d056950a8d8f";
     static TEST_SOURCE_FEED_URL: &str = "test";
     static REAL_FEED_URL: &str = "https://softwareengineeringdaily.com/category/podcast/feed";
 
@@ -180,8 +196,7 @@ mod tests {
     fn create_feed_has_hash() {
         let feed = test_feed();
 
-        assert_ne!(feed.hash, String::new());
-        assert_eq!(feed.hash.as_str(), TEST_FEED_HASH);
+        assert_ne!(feed.get_hash(), 0);
     }
 
     #[test]

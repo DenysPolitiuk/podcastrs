@@ -571,19 +571,19 @@ mod tests {
         coll.drop().unwrap();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
-        let feed1_hash = feed1.get_hash().to_string();
+        let feed1_hash = feed1.get_hash();
         let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
-        let feed2_hash = feed2.get_hash().to_string();
+        let feed2_hash = feed2.get_hash();
         let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
-        let feed3_hash = feed3.get_hash().to_string();
+        let feed3_hash = feed3.get_hash();
         let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
-        let feed4_hash = feed4.get_hash().to_string();
+        let feed4_hash = feed4.get_hash();
 
         let mut stored_items = HashMap::new();
-        stored_items.insert(feed1_hash.clone(), feed1.clone());
-        stored_items.insert(feed2_hash.clone(), feed2.clone());
-        stored_items.insert(feed3_hash.clone(), feed3.clone());
-        stored_items.insert(feed4_hash.clone(), feed4.clone());
+        stored_items.insert(feed1_hash, feed1.clone());
+        stored_items.insert(feed2_hash, feed2.clone());
+        stored_items.insert(feed3_hash, feed3.clone());
+        stored_items.insert(feed4_hash, feed4.clone());
 
         RssStorage::add_new_rss_feed(&storage, feed1).unwrap();
         RssStorage::add_new_rss_feed(&storage, feed2).unwrap();
@@ -607,7 +607,7 @@ mod tests {
             let feed_json: String = bson::from_bson(son.clone()).unwrap();
             let feed: RssFeed = serde_json::from_str(&feed_json).unwrap();
 
-            stored_items.remove(feed.get_hash());
+            stored_items.remove(&feed.get_hash());
         }
 
         assert!(stored_items.is_empty());
@@ -633,13 +633,13 @@ mod tests {
         coll.drop().unwrap();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
-        let feed1_hash = feed1.get_hash().to_string();
+        let feed1_hash = feed1.get_hash();
         let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
-        let feed2_hash = feed2.get_hash().to_string();
+        let feed2_hash = feed2.get_hash();
         let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
-        let feed3_hash = feed3.get_hash().to_string();
+        let feed3_hash = feed3.get_hash();
         let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
-        let feed4_hash = feed4.get_hash().to_string();
+        let feed4_hash = feed4.get_hash();
 
         assert!(storage.get_last_rss_feed(SOURCE1).unwrap().is_none());
 
@@ -694,13 +694,13 @@ mod tests {
         coll.drop().unwrap();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
-        let feed1_hash = feed1.get_hash().to_string();
+        let feed1_hash = feed1.get_hash();
         let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
-        let feed2_hash = feed2.get_hash().to_string();
+        let feed2_hash = feed2.get_hash();
         let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
-        let feed3_hash = feed3.get_hash().to_string();
+        let feed3_hash = feed3.get_hash();
         let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
-        let feed4_hash = feed4.get_hash().to_string();
+        let feed4_hash = feed4.get_hash();
 
         RssStorage::add_new_rss_feed(&storage, feed1.clone()).unwrap();
         let id = get_rss_feed_id(&coll, &feed1);
@@ -744,13 +744,13 @@ mod tests {
         coll.drop().unwrap();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
-        let feed1_hash = feed1.get_hash().to_string();
+        let feed1_hash = feed1.get_hash();
         let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
-        let feed2_hash = feed2.get_hash().to_string();
+        let feed2_hash = feed2.get_hash();
         let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
-        let feed3_hash = feed3.get_hash().to_string();
+        let feed3_hash = feed3.get_hash();
         let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
-        let feed4_hash = feed4.get_hash().to_string();
+        let feed4_hash = feed4.get_hash();
 
         RssStorage::add_new_rss_feed(&storage, feed1.clone()).unwrap();
         let feeds = storage.get_rss_feeds_by_url(SOURCE1).unwrap();
@@ -793,13 +793,13 @@ mod tests {
         coll.drop().unwrap();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
-        let feed1_hash = feed1.get_hash().to_string();
+        let feed1_hash = feed1.get_hash();
         let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
-        let feed2_hash = feed2.get_hash().to_string();
+        let feed2_hash = feed2.get_hash();
         let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
-        let feed3_hash = feed3.get_hash().to_string();
+        let feed3_hash = feed3.get_hash();
         let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
-        let feed4_hash = feed4.get_hash().to_string();
+        let feed4_hash = feed4.get_hash();
 
         assert!(storage.get_rss_feeds().unwrap().is_empty());
 
@@ -856,13 +856,13 @@ mod tests {
         RssStorage::add_source_feed(&storage, source_feed3).unwrap();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
-        let feed1_hash = feed1.get_hash().to_string();
+        let feed1_hash = feed1.get_hash();
         let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
-        let feed2_hash = feed2.get_hash().to_string();
+        let feed2_hash = feed2.get_hash();
         let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
-        let feed3_hash = feed3.get_hash().to_string();
+        let feed3_hash = feed3.get_hash();
         let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
-        let feed4_hash = feed4.get_hash().to_string();
+        let feed4_hash = feed4.get_hash();
 
         assert!(storage.get_rss_feeds().unwrap().is_empty());
 

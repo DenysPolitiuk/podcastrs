@@ -185,7 +185,7 @@ mod tests {
         fn get_rss_feed_by_id(&self, id: &str) -> Result<Option<RssFeed>, Box<dyn Error>> {
             for feeds in self.rss_feeds.lock().unwrap().values() {
                 for feed in feeds {
-                    if feed.get_hash() == id {
+                    if feed.get_hash().to_string() == id {
                         return Ok(Some(feed.clone()));
                     }
                 }
@@ -397,13 +397,13 @@ mod tests {
         let storage = Arc::new(PodRocketStorageTest::new());
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
-        let feed1_hash = feed1.get_hash().to_string();
+        let feed1_hash = feed1.get_hash();
         let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
-        let feed2_hash = feed2.get_hash().to_string();
+        let feed2_hash = feed2.get_hash();
         let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
-        let feed3_hash = feed3.get_hash().to_string();
+        let feed3_hash = feed3.get_hash();
         let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
-        let feed4_hash = feed4.get_hash().to_string();
+        let feed4_hash = feed4.get_hash();
 
         let rocket = make_rocket(storage.clone());
         let client = Client::new(rocket).expect("not a valid rocket instance");
@@ -500,13 +500,13 @@ mod tests {
         let storage = Arc::new(PodRocketStorageTest::new());
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
-        let feed1_hash = feed1.get_hash().to_string();
+        let feed1_hash = feed1.get_hash();
         let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
-        let feed2_hash = feed2.get_hash().to_string();
+        let feed2_hash = feed2.get_hash();
         let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
-        let feed3_hash = feed3.get_hash().to_string();
+        let feed3_hash = feed3.get_hash();
         let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
-        let feed4_hash = feed4.get_hash().to_string();
+        let feed4_hash = feed4.get_hash();
 
         let rocket = make_rocket(storage.clone());
         let client = Client::new(rocket).expect("not a valid rocket instance");
@@ -617,13 +617,13 @@ mod tests {
         let storage = Arc::new(PodRocketStorageTest::new());
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
-        let feed1_hash = feed1.get_hash().to_string();
+        let feed1_hash = feed1.get_hash();
         let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
-        let feed2_hash = feed2.get_hash().to_string();
+        let feed2_hash = feed2.get_hash();
         let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
-        let feed3_hash = feed3.get_hash().to_string();
+        let feed3_hash = feed3.get_hash();
         let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
-        let feed4_hash = feed4.get_hash().to_string();
+        let feed4_hash = feed4.get_hash();
 
         let source1 = SourceFeed::new(SOURCE1, "").unwrap();
         let source2 = SourceFeed::new(SOURCE2, "").unwrap();

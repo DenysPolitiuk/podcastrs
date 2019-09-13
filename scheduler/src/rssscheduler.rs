@@ -407,13 +407,13 @@ mod tests {
         let mut scheduler = set_up_scheduler_with_feeds();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
-        let feed1_hash = feed1.get_hash().to_string();
+        let feed1_hash = feed1.get_hash();
         let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
-        let feed2_hash = feed2.get_hash().to_string();
+        let feed2_hash = feed2.get_hash();
         let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
-        let feed3_hash = feed3.get_hash().to_string();
+        let feed3_hash = feed3.get_hash();
         let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
-        let feed4_hash = feed4.get_hash().to_string();
+        let feed4_hash = feed4.get_hash();
 
         assert_eq!(scheduler.get_feed(SOURCE1).unwrap().get_hash(), feed1_hash);
         assert!(!scheduler.add_new_feed(feed1));
@@ -473,11 +473,11 @@ mod tests {
             .unwrap();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
-        let feed1_hash = feed1.get_hash().to_string();
+        let feed1_hash = feed1.get_hash();
         let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
-        let feed2_hash = feed2.get_hash().to_string();
+        let feed2_hash = feed2.get_hash();
         let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
-        let feed3_hash = feed3.get_hash().to_string();
+        let feed3_hash = feed3.get_hash();
 
         storage.add_new_rss_feed(feed1).unwrap();
         storage.add_new_rss_feed(feed3).unwrap();
@@ -515,13 +515,13 @@ mod tests {
             .unwrap();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
-        let feed1_hash = feed1.get_hash().to_string();
+        let feed1_hash = feed1.get_hash();
         let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
-        let feed2_hash = feed2.get_hash().to_string();
+        let feed2_hash = feed2.get_hash();
         let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
-        let feed3_hash = feed3.get_hash().to_string();
+        let feed3_hash = feed3.get_hash();
         let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
-        let feed4_hash = feed4.get_hash().to_string();
+        let feed4_hash = feed4.get_hash();
 
         assert!(storage.rss_feeds.borrow().get(SOURCE1).is_none());
         assert!(storage.rss_feeds.borrow().get(SOURCE2).is_none());
@@ -627,13 +627,13 @@ mod tests {
             .unwrap();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
-        let feed1_hash = feed1.get_hash().to_string();
+        let feed1_hash = feed1.get_hash();
         let feed2 = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
-        let feed2_hash = feed2.get_hash().to_string();
+        let feed2_hash = feed2.get_hash();
         let feed3 = RssFeed::new_from_file(SOURCE1, FEED2_FILE).unwrap();
-        let feed3_hash = feed3.get_hash().to_string();
+        let feed3_hash = feed3.get_hash();
         let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
-        let feed4_hash = feed4.get_hash().to_string();
+        let feed4_hash = feed4.get_hash();
 
         let mut scheduler = set_up_scheduler_with_feeds();
 
