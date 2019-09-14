@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
-use serde_json;
 
-use util;
+use super::BasicMeta;
 
 use std::error::Error;
 
@@ -9,8 +8,7 @@ use std::error::Error;
 pub struct SourceFeed {
     url: String,
     title: String,
-    // TODO: change back to u32 after using new datastore
-    hash: Option<i64>,
+    metadata: BasicMeta,
 }
 
 impl SourceFeed {
@@ -18,7 +16,7 @@ impl SourceFeed {
         SourceFeed {
             url: url.to_string(),
             title: title.to_string(),
-            hash: None,
+            metadata: BasicMeta::new(),
         }
     }
 
@@ -27,12 +25,11 @@ impl SourceFeed {
     }
 
     fn with_compute_hash(self) -> Result<Self, Box<dyn Error>> {
-        let json = serde_json::to_string(&self)?;
-
+        let meta = self.metadata.clone();
         Ok(SourceFeed {
             url: self.url.clone(),
             title: self.title.clone(),
-            hash: Some(i64::from(util::compute_hash(&json))),
+            metadata: meta.with_compute_hash(&self)?,
         })
     }
 
@@ -45,15 +42,14 @@ impl SourceFeed {
     }
 
     pub fn get_hash(&self) -> i64 {
-        match self.hash {
+        match self.metadata.get_hash() {
             Some(v) => v,
             // this case should not happened unless creating struct with no hash is exposed
             None => self
                 .clone()
                 .with_compute_hash()
                 .expect("internal hashing error")
-                .hash
-                .unwrap(),
+                .get_hash(),
         }
     }
 }
@@ -84,36 +80,8 @@ mod tests {
     }
 
     #[test]
-    fn generate_hash() {
+    fn get_hash() {
         let source_feed = SourceFeed::new(SOURCE1, "").unwrap();
-        assert!(source_feed.hash.is_some());
         assert!(source_feed.get_hash() >= 0);
-    }
-
-    #[test]
-    fn generate_hash_is_the_same() {
-        let source_feed_1 = SourceFeed::new(SOURCE1, "").unwrap();
-        let source_feed_2 = SourceFeed::new(SOURCE1, "").unwrap();
-        assert!(source_feed_1.hash.is_some());
-        assert!(source_feed_2.hash.is_some());
-        assert_eq!(source_feed_1.get_hash(), source_feed_2.get_hash());
-    }
-
-    #[test]
-    fn generate_different_hash() {
-        let source_feed_1 = SourceFeed::new(SOURCE1, "").unwrap();
-        let source_feed_2 = SourceFeed::new(SOURCE2, "").unwrap();
-        assert!(source_feed_1.hash.is_some());
-        assert!(source_feed_2.hash.is_some());
-        assert_ne!(source_feed_1.get_hash(), source_feed_2.get_hash());
-    }
-
-    #[test]
-    fn get_hash_multiple_times_is_the_same() {
-        let source_feed = SourceFeed::new(SOURCE1, "").unwrap();
-        assert!(source_feed.hash.is_some());
-        let first_hash = source_feed.get_hash();
-        let second_hash = source_feed.get_hash();
-        assert_eq!(first_hash, second_hash);
     }
 }

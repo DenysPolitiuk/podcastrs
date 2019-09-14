@@ -5,6 +5,7 @@ use serde_json;
 
 use super::MiniChannel;
 use super::MiniItem;
+use super::RssFeedCore;
 use util;
 
 use std::error::Error;
@@ -14,10 +15,12 @@ use std::path::Path;
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct RssFeed {
+    core: Option<RssFeedCore>,
+    // TODO: put items
+    items: Vec<String>,
+    // TODO: put catergories
+    catergories: Option<Vec<String>>,
     source_feed_url: String,
-    #[serde(skip)]
-    channel: Option<Channel>,
-    mini_channel: MiniChannel,
     // TODO: better datatype ?
     // TODO: replace with u32, similar to SourceFeed
     hash: Option<i64>,
@@ -45,26 +48,28 @@ impl RssFeed {
         let buf_reader = BufReader::new(&file);
         let channel = Channel::read_from(buf_reader)?;
 
-        Ok(RssFeed {
-            source_feed_url: source_url.to_string(),
-            hash: None,
-            feed_file_location: String::from(file_name),
-            mini_channel: MiniChannel::from_channel(&channel),
-            channel: Some(channel),
-        }
-        .with_compute_hash()?)
+        panic!("not implemented")
+        // Ok(RssFeed {
+        // source_feed_url: source_url.to_string(),
+        // hash: None,
+        // feed_file_location: String::from(file_name),
+        // mini_channel: MiniChannel::from_channel(&channel),
+        // channel: Some(channel),
+        // }
+        // .with_compute_hash()?)
     }
 
     fn with_compute_hash(self) -> Result<Self, Box<dyn Error + Send + Sync>> {
         let json = serde_json::to_string(&self)?;
 
-        Ok(RssFeed {
-            source_feed_url: self.source_feed_url.clone(),
-            hash: Some(i64::from(util::compute_hash(&json))),
-            feed_file_location: self.feed_file_location.clone(),
-            mini_channel: self.mini_channel.clone(),
-            channel: self.channel.clone(),
-        })
+        panic!("not implemented")
+        // Ok(RssFeed {
+        // source_feed_url: self.source_feed_url.clone(),
+        // hash: Some(i64::from(util::compute_hash(&json))),
+        // feed_file_location: self.feed_file_location.clone(),
+        // mini_channel: self.mini_channel.clone(),
+        // channel: self.channel.clone(),
+        // })
     }
 
     pub fn get_source_feed(&self) -> &String {
@@ -89,7 +94,8 @@ impl RssFeed {
     }
 
     pub fn get_items(&self) -> &[MiniItem] {
-        &self.mini_channel.get_items()
+        // &self.mini_channel.get_items()
+        &[]
     }
 
     pub fn save_item_to_file<P: AsRef<Path>>(
