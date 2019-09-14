@@ -105,7 +105,7 @@ fn import_source_feeds(input_file_name: &str, storage: &dyn RssSchedulerStorage)
         .expect("unable to get source feeds from storage");
 
     for sfeed in source_feeds {
-        if let Some(_) = existing_feeds.get(&sfeed.url) {
+        if let Some(_) = existing_feeds.get(&sfeed.get_url()) {
             continue;
         }
         if let Err(e) = storage.add_source_feed(sfeed) {

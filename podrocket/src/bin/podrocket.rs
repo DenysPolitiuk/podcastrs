@@ -167,7 +167,7 @@ mod tests {
             let mut result = HashMap::new();
 
             for source_feed in self.source_feeds.lock().unwrap().values() {
-                let mut feeds = match self.rss_feeds.lock().unwrap().get(&source_feed.url) {
+                let mut feeds = match self.rss_feeds.lock().unwrap().get(&source_feed.get_url()) {
                     Some(v) => v,
                     None => continue,
                 }
@@ -176,7 +176,7 @@ mod tests {
                     continue;
                 }
                 let feed = feeds.pop().unwrap();
-                result.insert(source_feed.url.clone(), feed);
+                result.insert(source_feed.get_url(), feed);
             }
 
             Ok(result)
@@ -224,7 +224,7 @@ mod tests {
             self.source_feeds
                 .lock()
                 .unwrap()
-                .insert(source_feed.url.clone(), source_feed);
+                .insert(source_feed.get_url(), source_feed);
 
             Ok(())
         }
@@ -270,7 +270,7 @@ mod tests {
         let mut found_feeds = 0;
         for orig_feed in &original_source_feeds {
             for new_feed in &source_feeds {
-                if orig_feed.url == new_feed.url {
+                if orig_feed.get_url() == new_feed.get_url() {
                     found_feeds += 1;
                     break;
                 }
@@ -311,7 +311,7 @@ mod tests {
         let res_body = res.body_string().unwrap();
         let source_feed: SourceFeed = serde_json::from_str(&res_body).unwrap();
         assert!(res_body.contains(SOURCE1));
-        assert_eq!(source1.url, source_feed.url);
+        assert_eq!(source1.get_url(), source_feed.get_url());
 
         let mut res = client
             .get(format!("{}/{}", SOURCE_FEED_URL, SOURCE2))
@@ -320,7 +320,7 @@ mod tests {
         let res_body = res.body_string().unwrap();
         let source_feed: SourceFeed = serde_json::from_str(&res_body).unwrap();
         assert!(res_body.contains(SOURCE2));
-        assert_eq!(source2.url, source_feed.url);
+        assert_eq!(source2.get_url(), source_feed.get_url());
 
         let mut res = client
             .get(format!("{}/{}", SOURCE_FEED_URL, SOURCE3))
@@ -329,7 +329,7 @@ mod tests {
         let res_body = res.body_string().unwrap();
         let source_feed: SourceFeed = serde_json::from_str(&res_body).unwrap();
         assert!(res_body.contains(SOURCE3));
-        assert_eq!(source3.url, source_feed.url);
+        assert_eq!(source3.get_url(), source_feed.get_url());
     }
 
     #[test]
@@ -355,8 +355,8 @@ mod tests {
                 .get_source_feed_by_url(SOURCE1)
                 .unwrap()
                 .unwrap()
-                .url,
-            source1.url
+                .get_url(),
+            source1.get_url()
         );
 
         let res = client
@@ -371,8 +371,8 @@ mod tests {
                 .get_source_feed_by_url(SOURCE2)
                 .unwrap()
                 .unwrap()
-                .url,
-            source2.url
+                .get_url(),
+            source2.get_url()
         );
 
         let res = client
@@ -387,8 +387,8 @@ mod tests {
                 .get_source_feed_by_url(SOURCE3)
                 .unwrap()
                 .unwrap()
-                .url,
-            source3.url
+                .get_url(),
+            source3.get_url()
         );
     }
 

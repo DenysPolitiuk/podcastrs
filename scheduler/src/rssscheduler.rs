@@ -81,9 +81,9 @@ impl RssScheduler {
         storage: &dyn RssSchedulerStorage,
     ) -> Result<(), Box<dyn Error>> {
         for source_feed in self.source_feeds.values() {
-            let feed = storage.get_last_rss_feed(&source_feed.url)?;
+            let feed = storage.get_last_rss_feed(&source_feed.get_url())?;
             if let Some(feed) = feed {
-                self.rss_feeds.insert(source_feed.url.clone(), feed);
+                self.rss_feeds.insert(source_feed.get_url(), feed);
             }
         }
 
@@ -96,7 +96,7 @@ impl RssScheduler {
         storage: &dyn RssSchedulerStorage,
     ) -> Result<(), Box<dyn Error>> {
         for source_feed in self.source_feeds.values() {
-            let feed = self.rss_feeds.get(&source_feed.url);
+            let feed = self.rss_feeds.get(&source_feed.get_url());
             if let Some(feed) = feed {
                 storage.add_new_rss_feed(feed.clone())?;
             }
@@ -224,11 +224,11 @@ impl RssScheduler {
             );
             let feed_path = Path::new(feed_folder).join(Path::new(&feed_file_name));
             let feed = RssFeed::new_from_url(
-                source_feed.url.as_str(),
+                source_feed.get_url().as_str(),
                 feed_path.to_str().ok_or("unable to ")?,
             );
             if let Ok(feed) = feed {
-                new_feeds.insert(source_feed.url.clone(), feed);
+                new_feeds.insert(source_feed.get_url(), feed);
             }
         }
 
@@ -323,7 +323,7 @@ mod tests {
         fn add_source_feed(&self, source_feed: SourceFeed) -> Result<(), Box<dyn Error>> {
             self.source_feeds
                 .borrow_mut()
-                .insert(source_feed.url.clone(), source_feed);
+                .insert(source_feed.get_url(), source_feed);
 
             Ok(())
         }
@@ -366,9 +366,18 @@ mod tests {
     fn get_source_feeds() {
         let scheduler = set_up_scheduler();
 
-        assert_eq!(scheduler.get_source_feed(SOURCE1).unwrap().url, SOURCE1);
-        assert_eq!(scheduler.get_source_feed(SOURCE2).unwrap().url, SOURCE2);
-        assert_eq!(scheduler.get_source_feed(SOURCE3).unwrap().url, SOURCE3);
+        assert_eq!(
+            scheduler.get_source_feed(SOURCE1).unwrap().get_url(),
+            SOURCE1
+        );
+        assert_eq!(
+            scheduler.get_source_feed(SOURCE2).unwrap().get_url(),
+            SOURCE2
+        );
+        assert_eq!(
+            scheduler.get_source_feed(SOURCE3).unwrap().get_url(),
+            SOURCE3
+        );
         assert!(scheduler.get_source_feed(INVALID_SOURCE).is_none());
     }
 

@@ -7,8 +7,7 @@ use std::error::Error;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct SourceFeed {
-    // TODO: make private and use getter
-    pub url: String,
+    url: String,
     title: String,
     // TODO: change back to u32 after using new datastore
     hash: Option<i64>,

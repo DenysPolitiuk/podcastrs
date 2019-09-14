@@ -146,7 +146,7 @@ impl RssStorage {
                 Err(e) => Err(format!("Failed to parse input BSON, error : {}", e))?,
             };
 
-            results.insert(source_feed.url.clone(), source_feed);
+            results.insert(source_feed.get_url(), source_feed);
         }
 
         Ok(results)
@@ -281,7 +281,7 @@ impl PodRocketStorage for RssStorage {
 
         for source_feed in source_feeds.values() {
             let find_doc = doc! {
-                SOURCE_URL_FIELD: source_feed.url.clone(),
+                SOURCE_URL_FIELD: source_feed.get_url(),
             };
             let find_sort_doc = doc! {
                 TIMESTAMP_FIELD: -1,
@@ -301,7 +301,7 @@ impl PodRocketStorage for RssStorage {
             let son = doc.get(DATA_FIELD).unwrap();
             let feed_json: String = bson::from_bson(son.clone())?;
             let feed: RssFeed = serde_json::from_str(&feed_json)?;
-            result_feeds.insert(source_feed.url.clone(), feed);
+            result_feeds.insert(source_feed.get_url(), feed);
         }
 
         Ok(result_feeds)
@@ -426,9 +426,9 @@ mod tests {
         let source_feed3 = SourceFeed::new(SOURCE3, "").unwrap();
 
         let mut stored_items = HashMap::new();
-        stored_items.insert(source_feed1.url.clone(), source_feed1.clone());
-        stored_items.insert(source_feed2.url.clone(), source_feed2.clone());
-        stored_items.insert(source_feed3.url.clone(), source_feed3.clone());
+        stored_items.insert(source_feed1.get_url(), source_feed1.clone());
+        stored_items.insert(source_feed2.get_url(), source_feed2.clone());
+        stored_items.insert(source_feed3.get_url(), source_feed3.clone());
 
         RssStorage::add_source_feed(&storage, source_feed1).unwrap();
         RssStorage::add_source_feed(&storage, source_feed3).unwrap();
@@ -450,7 +450,7 @@ mod tests {
             let son = doc.get(DATA_FIELD).unwrap();
             let source_feed: SourceFeed = bson::from_bson(son.clone()).unwrap();
 
-            stored_items.remove(&source_feed.url);
+            stored_items.remove(&source_feed.get_url());
         }
 
         assert!(stored_items.is_empty());
@@ -480,9 +480,9 @@ mod tests {
         let source_feed3 = SourceFeed::new(SOURCE3, "").unwrap();
 
         let mut stored_items = HashMap::new();
-        stored_items.insert(source_feed1.url.clone(), source_feed1.clone());
-        stored_items.insert(source_feed2.url.clone(), source_feed2.clone());
-        stored_items.insert(source_feed3.url.clone(), source_feed3.clone());
+        stored_items.insert(source_feed1.get_url(), source_feed1.clone());
+        stored_items.insert(source_feed2.get_url(), source_feed2.clone());
+        stored_items.insert(source_feed3.get_url(), source_feed3.clone());
 
         RssStorage::add_source_feed(&storage, source_feed1).unwrap();
         RssStorage::add_source_feed(&storage, source_feed3).unwrap();
@@ -493,8 +493,8 @@ mod tests {
         assert_eq!(results.len(), stored_items.len());
         for item in results.keys() {
             assert_eq!(
-                results.get(&item.clone()).unwrap().url,
-                stored_items.get(&item.clone()).unwrap().url
+                results.get(&item.clone()).unwrap().get_url(),
+                stored_items.get(&item.clone()).unwrap().get_url()
             );
         }
 
@@ -523,9 +523,9 @@ mod tests {
         let source_feed3 = SourceFeed::new(SOURCE3, "").unwrap();
 
         let mut stored_items = HashMap::new();
-        stored_items.insert(source_feed1.url.clone(), source_feed1.clone());
-        stored_items.insert(source_feed2.url.clone(), source_feed2.clone());
-        stored_items.insert(source_feed3.url.clone(), source_feed3.clone());
+        stored_items.insert(source_feed1.get_url(), source_feed1.clone());
+        stored_items.insert(source_feed2.get_url(), source_feed2.clone());
+        stored_items.insert(source_feed3.get_url(), source_feed3.clone());
 
         assert!(RssStorage::get_source_feed_by_url(&storage, SOURCE1)
             .unwrap()
@@ -538,17 +538,17 @@ mod tests {
         let result = RssStorage::get_source_feed_by_url(&storage, SOURCE1)
             .unwrap()
             .unwrap();
-        assert_eq!(result.url, source_feed1.url);
+        assert_eq!(result.get_url(), source_feed1.get_url());
 
         let result = RssStorage::get_source_feed_by_url(&storage, SOURCE2)
             .unwrap()
             .unwrap();
-        assert_eq!(result.url, source_feed2.url);
+        assert_eq!(result.get_url(), source_feed2.get_url());
 
         let result = RssStorage::get_source_feed_by_url(&storage, SOURCE3)
             .unwrap()
             .unwrap();
-        assert_eq!(result.url, source_feed3.url);
+        assert_eq!(result.get_url(), source_feed3.get_url());
 
         coll.drop().unwrap();
     }
