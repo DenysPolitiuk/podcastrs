@@ -1,5 +1,5 @@
-use common::MiniItem;
 use common::RssFeed;
+use common::RssItem;
 use common::SourceFeed;
 use scheduler_trait::RssSchedulerStorage;
 
@@ -30,7 +30,7 @@ impl RssScheduler {
         &mut self,
         source_feed_url: &str,
         source_feed_title: &str,
-    ) -> Result<bool, Box<dyn Error>> {
+    ) -> Result<bool, Box<dyn Error + Send + Sync>> {
         let url = source_feed_url.to_string();
         match self.source_feeds.entry(url) {
             Entry::Occupied(_) => Ok(false),
@@ -177,7 +177,16 @@ impl RssScheduler {
                     }
                     RssScheduler::find_new_items(&old_feed, &new_feed)
                 }
-                None => new_feed.get_items().to_vec(),
+                None => match new_feed.get_items() {
+                    Some(items) => items,
+                    None => {
+                        // items are empty when they are not loaded
+                        // cause those feeds have been just created
+                        // they should be always loaded
+                        panic!("new feeds are not fully loaded, bug")
+                    }
+                }
+                .to_vec(),
             };
 
             if let Some(target_folder) = target_folder {
@@ -235,12 +244,20 @@ impl RssScheduler {
         Ok(new_feeds)
     }
 
-    fn find_new_items(old_feed: &RssFeed, new_feed: &RssFeed) -> Vec<MiniItem> {
+    fn find_new_items(old_feed: &RssFeed, new_feed: &RssFeed) -> Vec<RssItem> {
         let mut difference = vec![];
-        let mut existing_guids = HashSet::with_capacity(old_feed.get_items().len());
+        let mut existing_guids = HashSet::new();
 
-        for item in old_feed.get_items() {
-            let guid = match item.get_guid() {
+        let old_feed_items = match old_feed.get_items() {
+            Some(items) => items,
+            None => {
+                // TODO: add call to method to fully load old feed
+                panic!("to be implemented")
+            }
+        };
+
+        for item in old_feed_items {
+            let guid = match item.get_guid_value() {
                 // using guids to compare items in the feed so if it doesn't exist panic
                 // in future might have to create a different way to compare items if
                 // guid is not present
@@ -250,8 +267,16 @@ impl RssScheduler {
             existing_guids.insert(guid);
         }
 
-        for item in new_feed.get_items() {
-            let guid = match item.get_guid() {
+        let new_feed_items = match new_feed.get_items() {
+            Some(items) => items,
+            None => {
+                // TODO: add call to method to fully load old feed
+                panic!("to be implemented")
+            }
+        };
+
+        for item in new_feed_items {
+            let guid = match item.get_guid_value() {
                 // using guids to compare items in the feed so if it doesn't exist panic
                 // in future might have to create a different way to compare items if
                 // guid is not present
@@ -780,10 +805,13 @@ mod tests {
             "http://softwareengineeringdaily.com/?p=7813",
             "http://softwareengineeringdaily.com/?p=7781",
         ];
-        let difference_guids: Vec<_> = difference.iter().map(|i| i.get_guid().unwrap()).collect();
+        let difference_guids: Vec<_> = difference
+            .iter()
+            .map(|i| i.get_guid_value().unwrap())
+            .collect();
 
         for item in &difference {
-            println!("{}", item.get_guid().unwrap());
+            println!("{}", item.get_guid_value().unwrap());
         }
 
         assert!(!difference.is_empty());

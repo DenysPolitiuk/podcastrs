@@ -8,6 +8,8 @@ use super::RssCategory;
 
 use std::error::Error;
 
+type ErrorType = dyn Error + Send + Sync;
+
 #[derive(Clone, Deserialize, Serialize)]
 pub struct RssItem {
     title: Option<String>,
@@ -42,7 +44,7 @@ impl RssItem {
         }
     }
 
-    fn with_compute_hash(self) -> Result<Self, Box<dyn Error>> {
+    fn with_compute_hash(self) -> Result<Self, Box<ErrorType>> {
         let meta = self.metadata.clone();
 
         Ok(RssItem {
@@ -58,7 +60,7 @@ impl RssItem {
         })
     }
 
-    pub fn new_from_item(item: &Item) -> Result<RssItem, Box<dyn Error>> {
+    pub fn new_from_item(item: &Item) -> Result<RssItem, Box<ErrorType>> {
         RssItem::new_no_hash(item).with_compute_hash()
     }
 
@@ -86,8 +88,16 @@ impl RssItem {
         &self.enclosure
     }
 
+    pub fn get_enclosure_url(&self) -> Option<&str> {
+        self.get_enclosure().as_ref().map(|e| &*e.url())
+    }
+
     pub fn get_guid(&self) -> &Option<Guid> {
         &self.guid
+    }
+
+    pub fn get_guid_value(&self) -> Option<&str> {
+        self.get_guid().as_ref().map(|g| &*g.value())
     }
 
     pub fn get_pub_date(&self) -> Option<String> {
@@ -105,6 +115,20 @@ mod test {
     use std::io::BufReader;
 
     static TEST_FEED: &str = "../tests/sedaily.rss";
+
+    impl RssItem {
+        fn change_enclosure_url(&mut self, url: &str) {
+            if let Some(enclosure) = &mut self.enclosure {
+                enclosure.set_url(url);
+            }
+        }
+
+        fn change_guid_value(&mut self, guid_value: &str) {
+            if let Some(guid) = &mut self.guid {
+                guid.set_value(guid_value);
+            }
+        }
+    }
 
     fn create_channel_from_file(name: &str) -> Channel {
         let file = File::open(name).unwrap();
@@ -213,6 +237,15 @@ mod test {
     }
 
     #[test]
+    fn get_enclosure_url_some() {
+        let mut item = create_item(TEST_FEED);
+        let text = "this is url";
+        item.change_enclosure_url(text);
+        assert!(item.get_enclosure_url().is_some());
+        assert_eq!(Some(text), item.get_enclosure_url());
+    }
+
+    #[test]
     fn get_guid_none() {
         let mut item = create_item(TEST_FEED);
         item.guid = None;
@@ -223,6 +256,15 @@ mod test {
     fn get_guid_some() {
         let item = create_item(TEST_FEED);
         assert!(item.get_guid().is_some());
+    }
+
+    #[test]
+    fn get_guid_value_some() {
+        let mut item = create_item(TEST_FEED);
+        let text = "this is guid";
+        item.change_guid_value(text);
+        assert!(item.get_guid_value().is_some());
+        assert_eq!(item.get_guid_value(), Some(text));
     }
 
     #[test]

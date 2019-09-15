@@ -20,11 +20,11 @@ impl SourceFeed {
         }
     }
 
-    pub fn new(url: &str, title: &str) -> Result<SourceFeed, Box<dyn Error>> {
+    pub fn new(url: &str, title: &str) -> Result<SourceFeed, Box<dyn Error + Send + Sync>> {
         SourceFeed::new_no_hash(url, title).with_compute_hash()
     }
 
-    fn with_compute_hash(self) -> Result<Self, Box<dyn Error>> {
+    fn with_compute_hash(self) -> Result<Self, Box<dyn Error + Send + Sync>> {
         let meta = self.metadata.clone();
         Ok(SourceFeed {
             url: self.url.clone(),

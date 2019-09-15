@@ -6,6 +6,8 @@ use super::super::BasicMeta;
 
 use std::error::Error;
 
+type ErrorType = dyn Error + Send + Sync;
+
 #[derive(Clone, Deserialize, Serialize)]
 pub struct RssFeedCore {
     title: String,
@@ -31,11 +33,11 @@ impl RssFeedCore {
         }
     }
 
-    pub fn new_from_channel(channel: &Channel) -> Result<RssFeedCore, Box<dyn Error>> {
+    pub fn new_from_channel(channel: &Channel) -> Result<RssFeedCore, Box<ErrorType>> {
         RssFeedCore::new_no_hash(channel).with_compute_hash()
     }
 
-    fn with_compute_hash(self) -> Result<Self, Box<dyn Error>> {
+    fn with_compute_hash(self) -> Result<Self, Box<ErrorType>> {
         let meta = self.metadata.clone();
 
         Ok(RssFeedCore {

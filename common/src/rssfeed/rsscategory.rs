@@ -5,6 +5,8 @@ use super::super::BasicMeta;
 
 use std::error::Error;
 
+type ErrorType = dyn Error + Send + Sync;
+
 #[derive(Clone, Deserialize, Serialize)]
 pub struct RssCategory {
     name: String,
@@ -21,11 +23,11 @@ impl RssCategory {
         }
     }
 
-    pub fn new_from_category(category: &Category) -> Result<RssCategory, Box<dyn Error>> {
+    pub fn new_from_category(category: &Category) -> Result<RssCategory, Box<ErrorType>> {
         RssCategory::new_no_hash(category).with_compute_hash()
     }
 
-    fn with_compute_hash(self) -> Result<Self, Box<dyn Error>> {
+    fn with_compute_hash(self) -> Result<Self, Box<ErrorType>> {
         let meta = self.metadata.clone();
 
         Ok(RssCategory {

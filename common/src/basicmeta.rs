@@ -29,7 +29,7 @@ impl BasicMeta {
         }
     }
 
-    pub fn with_compute_hash<T>(self, obj: &T) -> Result<Self, Box<dyn Error>>
+    pub fn with_compute_hash<T>(self, obj: &T) -> Result<Self, Box<dyn Error + Send + Sync>>
     where
         T: Serialize + ?Sized,
     {
