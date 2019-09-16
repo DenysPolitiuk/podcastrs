@@ -415,30 +415,26 @@ mod tests {
 
     #[test]
     fn get_new_feed_from_feed_source() {
-        let scheduler = set_up_scheduler_with_feeds();
+        let mut scheduler = set_up_scheduler();
+
+        let feed1_orig = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
+        let feed2_orig = RssFeed::new_from_file(SOURCE2, FEED2_FILE).unwrap();
+
+        scheduler.add_new_feed(feed1_orig.clone());
+        scheduler.add_new_feed(feed2_orig.clone());
 
         let feed1 = scheduler.get_feed(SOURCE1).unwrap();
         let feed2 = scheduler.get_feed(SOURCE2).unwrap();
         let feed3 = scheduler.get_feed(INVALID_SOURCE);
 
-        assert_eq!(
-            feed1.get_hash(),
-            RssFeed::new_from_file(SOURCE1, FEED1_FILE)
-                .unwrap()
-                .get_hash()
-        );
-        assert_eq!(
-            feed2.get_hash(),
-            RssFeed::new_from_file(SOURCE2, FEED2_FILE)
-                .unwrap()
-                .get_hash()
-        );
+        assert_eq!(feed1.get_hash(), feed1_orig.get_hash());
+        assert_eq!(feed2.get_hash(), feed2_orig.get_hash());
         assert!(feed3.is_none());
     }
 
     #[test]
     fn update_feed() {
-        let mut scheduler = set_up_scheduler_with_feeds();
+        let mut scheduler = set_up_scheduler();
 
         let feed1 = RssFeed::new_from_file(SOURCE1, FEED1_FILE).unwrap();
         let feed1_hash = feed1.get_hash();
@@ -448,6 +444,9 @@ mod tests {
         let feed3_hash = feed3.get_hash();
         let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
         let feed4_hash = feed4.get_hash();
+
+        scheduler.add_new_feed(feed1.clone());
+        scheduler.add_new_feed(feed2.clone());
 
         assert_eq!(scheduler.get_feed(SOURCE1).unwrap().get_hash(), feed1_hash);
         assert!(!scheduler.add_new_feed(feed1));
@@ -669,7 +668,10 @@ mod tests {
         let feed4 = RssFeed::new_from_file(SOURCE2, FEED1_FILE).unwrap();
         let feed4_hash = feed4.get_hash();
 
-        let mut scheduler = set_up_scheduler_with_feeds();
+        let mut scheduler = set_up_scheduler();
+
+        scheduler.add_new_feed(feed1.clone());
+        scheduler.add_new_feed(feed2.clone());
 
         assert!(storage.rss_feeds.borrow().get(SOURCE1).is_none());
         assert!(storage.rss_feeds.borrow().get(SOURCE2).is_none());

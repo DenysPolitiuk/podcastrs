@@ -425,17 +425,20 @@ mod tests {
         let res_body = res.body_string().unwrap();
         let feed: RssFeed = serde_json::from_str(&res_body).unwrap();
         assert_eq!(feed.get_hash(), feed1_hash);
-        assert_eq!(feed.get_items().len(), feed1.get_items().len());
+        assert_eq!(
+            feed.get_items().unwrap().len(),
+            feed1.get_items().unwrap().len()
+        );
         let mut found_items = 0;
-        for orig_item in feed1.get_items() {
-            for new_item in feed.get_items() {
+        for orig_item in feed1.get_items().unwrap() {
+            for new_item in feed.get_items().unwrap() {
                 if new_item.get_guid() == orig_item.get_guid() {
                     found_items += 1;
                     break;
                 }
             }
         }
-        assert_eq!(found_items, feed1.get_items().len());
+        assert_eq!(found_items, feed1.get_items().unwrap().len());
 
         let mut res = client
             .get(format!("{}/{}", RSS_FEED_URL, feed2_hash))
@@ -444,17 +447,20 @@ mod tests {
         let res_body = res.body_string().unwrap();
         let feed: RssFeed = serde_json::from_str(&res_body).unwrap();
         assert_eq!(feed.get_hash(), feed2_hash);
-        assert_eq!(feed.get_items().len(), feed2.get_items().len());
+        assert_eq!(
+            feed.get_items().unwrap().len(),
+            feed2.get_items().unwrap().len()
+        );
         let mut found_items = 0;
-        for orig_item in feed2.get_items() {
-            for new_item in feed.get_items() {
+        for orig_item in feed2.get_items().unwrap() {
+            for new_item in feed.get_items().unwrap() {
                 if new_item.get_guid() == orig_item.get_guid() {
                     found_items += 1;
                     break;
                 }
             }
         }
-        assert_eq!(found_items, feed2.get_items().len());
+        assert_eq!(found_items, feed2.get_items().unwrap().len());
 
         let mut res = client
             .get(format!("{}/{}", RSS_FEED_URL, feed3_hash))
@@ -463,17 +469,20 @@ mod tests {
         let res_body = res.body_string().unwrap();
         let feed: RssFeed = serde_json::from_str(&res_body).unwrap();
         assert_eq!(feed.get_hash(), feed3_hash);
-        assert_eq!(feed.get_items().len(), feed3.get_items().len());
+        assert_eq!(
+            feed.get_items().unwrap().len(),
+            feed3.get_items().unwrap().len()
+        );
         let mut found_items = 0;
-        for orig_item in feed3.get_items() {
-            for new_item in feed.get_items() {
+        for orig_item in feed3.get_items().unwrap() {
+            for new_item in feed.get_items().unwrap() {
                 if new_item.get_guid() == orig_item.get_guid() {
                     found_items += 1;
                     break;
                 }
             }
         }
-        assert_eq!(found_items, feed3.get_items().len());
+        assert_eq!(found_items, feed3.get_items().unwrap().len());
 
         let mut res = client
             .get(format!("{}/{}", RSS_FEED_URL, feed4_hash))
@@ -482,17 +491,20 @@ mod tests {
         let res_body = res.body_string().unwrap();
         let feed: RssFeed = serde_json::from_str(&res_body).unwrap();
         assert_eq!(feed.get_hash(), feed4_hash);
-        assert_eq!(feed.get_items().len(), feed4.get_items().len());
+        assert_eq!(
+            feed.get_items().unwrap().len(),
+            feed4.get_items().unwrap().len()
+        );
         let mut found_items = 0;
-        for orig_item in feed4.get_items() {
-            for new_item in feed.get_items() {
+        for orig_item in feed4.get_items().unwrap() {
+            for new_item in feed.get_items().unwrap() {
                 if new_item.get_guid() == orig_item.get_guid() {
                     found_items += 1;
                     break;
                 }
             }
         }
-        assert_eq!(found_items, feed4.get_items().len());
+        assert_eq!(found_items, feed4.get_items().unwrap().len());
     }
 
     #[test]
@@ -530,17 +542,20 @@ mod tests {
         assert_eq!(feeds.len(), 1);
         let feed = feeds[0].clone();
         assert_eq!(feed.get_hash(), feed1_hash);
-        assert_eq!(feed.get_items().len(), feed1.get_items().len());
+        assert_eq!(
+            feed.get_items().unwrap().len(),
+            feed1.get_items().unwrap().len()
+        );
         let mut found_items = 0;
-        for orig_item in feed1.get_items() {
-            for new_item in feed.get_items() {
+        for orig_item in feed1.get_items().unwrap() {
+            for new_item in feed.get_items().unwrap() {
                 if new_item.get_guid() == orig_item.get_guid() {
                     found_items += 1;
                     break;
                 }
             }
         }
-        assert_eq!(found_items, feed1.get_items().len());
+        assert_eq!(found_items, feed1.get_items().unwrap().len());
 
         storage.add_new_rss_feed(feed2.clone()).unwrap();
 
@@ -553,17 +568,20 @@ mod tests {
         assert_eq!(feeds.len(), 1);
         let feed = feeds[0].clone();
         assert_eq!(feed.get_hash(), feed2_hash);
-        assert_eq!(feed.get_items().len(), feed2.get_items().len());
+        assert_eq!(
+            feed.get_items().unwrap().len(),
+            feed2.get_items().unwrap().len()
+        );
         let mut found_items = 0;
-        for orig_item in feed2.get_items() {
-            for new_item in feed.get_items() {
+        for orig_item in feed2.get_items().unwrap() {
+            for new_item in feed.get_items().unwrap() {
                 if new_item.get_guid() == orig_item.get_guid() {
                     found_items += 1;
                     break;
                 }
             }
         }
-        assert_eq!(found_items, feed2.get_items().len());
+        assert_eq!(found_items, feed2.get_items().unwrap().len());
 
         storage.add_new_rss_feed(feed3.clone()).unwrap();
 
@@ -576,17 +594,20 @@ mod tests {
         assert_eq!(feeds.len(), 2);
         let feed = feeds[1].clone();
         assert_eq!(feed.get_hash(), feed3_hash);
-        assert_eq!(feed.get_items().len(), feed3.get_items().len());
+        assert_eq!(
+            feed.get_items().unwrap().len(),
+            feed3.get_items().unwrap().len()
+        );
         let mut found_items = 0;
-        for orig_item in feed3.get_items() {
-            for new_item in feed.get_items() {
+        for orig_item in feed3.get_items().unwrap() {
+            for new_item in feed.get_items().unwrap() {
                 if new_item.get_guid() == orig_item.get_guid() {
                     found_items += 1;
                     break;
                 }
             }
         }
-        assert_eq!(found_items, feed3.get_items().len());
+        assert_eq!(found_items, feed3.get_items().unwrap().len());
 
         storage.add_new_rss_feed(feed4.clone()).unwrap();
 
@@ -599,17 +620,20 @@ mod tests {
         assert_eq!(feeds.len(), 2);
         let feed = feeds[1].clone();
         assert_eq!(feed.get_hash(), feed4_hash);
-        assert_eq!(feed.get_items().len(), feed4.get_items().len());
+        assert_eq!(
+            feed.get_items().unwrap().len(),
+            feed4.get_items().unwrap().len()
+        );
         let mut found_items = 0;
-        for orig_item in feed4.get_items() {
-            for new_item in feed.get_items() {
+        for orig_item in feed4.get_items().unwrap() {
+            for new_item in feed.get_items().unwrap() {
                 if new_item.get_guid() == orig_item.get_guid() {
                     found_items += 1;
                     break;
                 }
             }
         }
-        assert_eq!(found_items, feed4.get_items().len());
+        assert_eq!(found_items, feed4.get_items().unwrap().len());
     }
 
     #[test]
